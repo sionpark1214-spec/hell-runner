@@ -870,7 +870,7 @@
     const ABILITY_DEFS = [
       { key: 'kidSpeed',     icon: '🏆', name: '챔피언의 능력',       desc: '좀 더 빨라짐',          cost: 0,    unlock: 'free'    },
       { key: 'driverBolt',   icon: '🏎️', name: '운전자의 능력',       desc: '처음부터 부스터',       cost: 1000, unlock: 'buy'     },
-      { key: 'pilotJump',    icon: '✈️', name: '비행기 조종사의 능력', desc: '처음 점프가 더 높음',   cost: 2000, unlock: 'buy'     },
+      { key: 'pilotJump',    icon: '✈️', name: '비행기 조종사의 능력', desc: '점프 높이 ↑ + 두 번 점프', cost: 2000, unlock: 'buy' },
       { key: 'doctorRevive', icon: '🧑‍⚕️', name: '의사의 능력',         desc: '한 번 부활',            cost: 5000, unlock: 'buy'     },
       { key: 'wizardSpike',  icon: '🧙', name: '마법사의 능력',         desc: '가시 반으로 작아짐',    cost: 10000, unlock: 'buy'    },
       { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 5번',              cost: 0,    unlock: 'clear5'  },
@@ -1580,24 +1580,24 @@
       // 점프 가능 체크: 땅에 있으면 OK, 아니면 jumpsLeft > 0이어야 (더블점프)
       if (!player.onGround && jumpsLeft <= 0) return;
       if (player.onGround) {
-        jumpsLeft = abilities.doubleJump ? 2 : 1;
+        jumpsLeft = abilities.pilotJump ? 2 : 1;
       }
       jumpsLeft -= 1;
 
       if (wingsCharged) {
-        // 날개신발 / 조종사 큰 점프 (한 번만)
+        // 날개신발 / 조종사 첫 큰 점프 (한 번만)
         player.vy = WINGS_JUMP_VEL;
         wingsCharged = false;
         isJumpHeld = false;
         jumpHoldFrames = MAX_HOLD_FRAMES;
-        // 조종사 능력으로 첫 점프면 슝
         if (abilities.pilotJump) playSwooshSound();
         else playJumpSound(true);
       } else {
-        player.vy = JUMP_VEL;
+        // 조종사 능력이면 일반 점프도 더 높이
+        player.vy = abilities.pilotJump ? -10.5 : JUMP_VEL;
         isJumpHeld = true;
         jumpHoldFrames = 0;
-        playJumpSound(false);  // 일반 점프
+        playJumpSound(false);
       }
       player.onGround = false;
     }
@@ -1726,14 +1726,14 @@
       spikeShards = [];
       wingsCharged = false;
       isFinalBoss = false;
-      jumpsLeft = 1;       // 더블점프 능력 제거됨, 항상 1번
+      // 비행기 조종사: 두 번 점프 가능
+      jumpsLeft = abilities.pilotJump ? 2 : 1;
       // 부활 횟수: 의사(1) + 천사(5) 합산
       revivesLeft = (abilities.doctorRevive ? 1 : 0) + (abilities.angelRevive5 ? 5 : 0);
       reviveUsed = false;
-      // 비행기 조종사: 처음부터 점프 1번 활성 (jumpsLeft 그대로 두되 die에서 큰 점프?)
-      // 단순화: pilotJump이면 첫 점프가 wings 점프처럼 큼 (한 번)
+      // 비행기 조종사: 첫 점프는 큰 점프 (wings)
       if (abilities.pilotJump) {
-        wingsCharged = true;   // 첫 점프가 큰 점프
+        wingsCharged = true;
       }
       // 소년: 좀 더 빨라짐
       player.speed = abilities.kidSpeed ? BASE_SPEED * 1.18 : BASE_SPEED;
