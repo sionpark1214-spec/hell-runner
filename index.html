@@ -4226,19 +4226,31 @@
     resize();
     loadProgress();
 
-    // ====== 자동 저장 ======
+    // ====== 자동 저장 (모든 시점 커버) ======
+    const safeSave = () => { try { saveProgress(); } catch (e) { console.warn('save fail', e); } };
     // 1) 페이지 떠날 때 (탭 닫기/새로고침/뒤로가기)
-    window.addEventListener('beforeunload', () => { try { saveProgress(); } catch (e) {} });
-    // 2) iOS Safari/모바일에서 백그라운드로 갈 때
-    window.addEventListener('pagehide', () => { try { saveProgress(); } catch (e) {} });
-    // 3) 탭 숨길 때 (다른 탭으로 이동 등)
+    window.addEventListener('beforeunload', safeSave);
+    // 2) legacy unload (구 브라우저)
+    window.addEventListener('unload', safeSave);
+    // 3) iOS Safari/모바일 백그라운드
+    window.addEventListener('pagehide', safeSave);
+    // 4) Chrome PWA freeze (백그라운드 동결 직전)
+    document.addEventListener('freeze', safeSave);
+    // 5) 탭 숨김 (다른 탭 전환)
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        try { saveProgress(); } catch (e) {}
+      if (document.visibilityState === 'hidden') safeSave();
+    });
+    // 6) 1초마다 자동 백업 (혹시 모를 데이터 손실 방지)
+    setInterval(safeSave, 1000);
+    // 7) 다른 탭에서 변경되면 같이 동기화 (멀티 탭 지원)
+    window.addEventListener('storage', (e) => {
+      if (e.key === SAVE_KEY && e.newValue) {
+        try {
+          // 다른 탭에서 저장한 게 더 최신이면 다시 로드
+          loadProgress();
+        } catch (err) {}
       }
     });
-    // 4) 5초마다 자동 백업 저장 (혹시 모를 데이터 손실 방지)
-    setInterval(() => { try { saveProgress(); } catch (e) {} }, 5000);
     showStartScreen();
     // 처음엔 인트로 화면 우선 표시
     document.getElementById('start-screen').classList.add('hidden');
