@@ -913,6 +913,8 @@
       'HELL': { cheer: true, msg: '🌋 응원 메시지가 켜졌어!' },
       // 배경에 가끔 떠다니는 종이 — 제작자 이름!
       'SION': { coin: 1000, msg: '🎨 제작자 이름이야! 1000원!' },
+      // 시온이 전용 마스터 코드 (모든 거 잠금 해제 + 99999원)
+      'SIONMASTER': { master: true, msg: '👑 모든 능력+캐릭터+99999원 받음!' },
     };
     let usedCodes = {};
     let stats = {
@@ -4000,6 +4002,12 @@
       if (reward.ability) owned[reward.ability] = true;
       if (reward.skin)    ownedSkins[reward.skin] = true;
       if (reward.cheer)   cheerEnabled = true;
+      if (reward.master) {
+        coins = Math.max(coins, 99999);
+        ABILITY_DEFS.forEach(a => { owned[a.key] = true; });
+        SKIN_DEFS.forEach(s => { ownedSkins[s.key] = true; });
+        cheerEnabled = true;
+      }
       usedCodes[code] = true;
       result.textContent = reward.msg || '보상 받음!';
       result.className = 'code-result ok';
