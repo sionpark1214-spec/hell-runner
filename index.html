@@ -4225,6 +4225,20 @@
     initFlames();
     resize();
     loadProgress();
+
+    // ====== 자동 저장 ======
+    // 1) 페이지 떠날 때 (탭 닫기/새로고침/뒤로가기)
+    window.addEventListener('beforeunload', () => { try { saveProgress(); } catch (e) {} });
+    // 2) iOS Safari/모바일에서 백그라운드로 갈 때
+    window.addEventListener('pagehide', () => { try { saveProgress(); } catch (e) {} });
+    // 3) 탭 숨길 때 (다른 탭으로 이동 등)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        try { saveProgress(); } catch (e) {}
+      }
+    });
+    // 4) 5초마다 자동 백업 저장 (혹시 모를 데이터 손실 방지)
+    setInterval(() => { try { saveProgress(); } catch (e) {} }, 5000);
     showStartScreen();
     // 처음엔 인트로 화면 우선 표시
     document.getElementById('start-screen').classList.add('hidden');
