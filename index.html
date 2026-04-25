@@ -1286,10 +1286,21 @@
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
+    function applyMaster() {
+      coins = Math.max(coins, 99999);
+      ABILITY_DEFS.forEach(a => { owned[a.key] = true; });
+      SKIN_DEFS.forEach(s => { ownedSkins[s.key] = true; });
+      cheerEnabled = true;
+    }
     function loadProgress() {
       try {
         const raw = localStorage.getItem(SAVE_KEY);
-        if (!raw) return;
+        // 시온이 노트북 (localhost/127.0.0.1)에서는 자동 마스터 적용
+        const isSion = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+        if (!raw) {
+          if (isSion) { applyMaster(); saveProgress(); }
+          return;
+        }
         const data = JSON.parse(raw);
         if (typeof data.coins === 'number') coins = data.coins;
         if (data.owned)        Object.keys(data.owned).forEach(k => { if (k in owned) owned[k] = !!data.owned[k]; });
@@ -1301,6 +1312,8 @@
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
+        // 시온이 노트북이면 항상 마스터 보장 (혹시 사라져도 복구)
+        if (isSion) { applyMaster(); saveProgress(); }
       } catch (e) {}
     }
 
