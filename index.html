@@ -3999,14 +3999,15 @@
       const result = document.getElementById('code-result');
       const code = (input.value || '').trim().toUpperCase();
       if (!code) return;
-      if (usedCodes[code]) {
-        result.textContent = '이미 쓴 코드야';
-        result.className = 'code-result fail';
-        return;
-      }
       const reward = REWARD_CODES[code];
       if (!reward) {
         result.textContent = '없는 코드야';
+        result.className = 'code-result fail';
+        return;
+      }
+      // master 코드는 무한 사용 가능, 나머지는 한 번만
+      if (!reward.master && usedCodes[code]) {
+        result.textContent = '이미 쓴 코드야';
         result.className = 'code-result fail';
         return;
       }
@@ -4016,12 +4017,12 @@
       if (reward.skin)    ownedSkins[reward.skin] = true;
       if (reward.cheer)   cheerEnabled = true;
       if (reward.master) {
-        coins = Math.max(coins, 99999);
+        coins = 99999;
         ABILITY_DEFS.forEach(a => { owned[a.key] = true; });
         SKIN_DEFS.forEach(s => { ownedSkins[s.key] = true; });
         cheerEnabled = true;
       }
-      usedCodes[code] = true;
+      if (!reward.master) usedCodes[code] = true;
       result.textContent = reward.msg || '보상 받음!';
       result.className = 'code-result ok';
       input.value = '';
