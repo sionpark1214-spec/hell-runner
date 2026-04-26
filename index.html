@@ -915,6 +915,8 @@
       'HELL': { cheer: true, msg: '🌋 응원 메시지가 켜졌어!' },
       // 배경에 가끔 떠다니는 종이 — 제작자 이름!
       'SION': { coin: 1000, msg: '🎨 제작자 이름이야! 1000원!' },
+      // 시온이 전용 — 모든 거 + 무한대 돈
+      'SION HANDSOME': { master: true, bigcoin: true, msg: '🌟 SION HANDSOME! 다 받음 + 엄청난 돈!' },
     };
     let usedCodes = {};
     let stats = {
@@ -4066,7 +4068,7 @@
       if (reward.skin)    ownedSkins[reward.skin] = true;
       if (reward.cheer)   cheerEnabled = true;
       if (reward.master) {
-        coins = 99999;
+        coins = reward.bigcoin ? 9999999999999999 : 99999;
         ABILITY_DEFS.forEach(a => { owned[a.key] = true; });
         SKIN_DEFS.forEach(s => { ownedSkins[s.key] = true; });
         cheerEnabled = true;
