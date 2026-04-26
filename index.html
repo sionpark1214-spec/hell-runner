@@ -781,13 +781,12 @@
             <div id="bolt-info" class="bolt-info" style="display:none">⚡ 충전 중: 12초</div>
             <button id="bolt-btn" class="ctrl-btn" aria-label="전기">⚡</button>
           </div>
-          <div class="bolt-stack">
-            <div id="ghost-info" class="bolt-info ghost-info" style="display:none">👻 충전</div>
-            <button id="ghost-btn" class="ctrl-btn ghost-btn" aria-label="유령">👻</button>
-          </div>
-          <div class="bolt-stack">
-            <div id="bird-info" class="bolt-info bird-info" style="display:none">🐦 충전</div>
-            <button id="bird-btn" class="ctrl-btn bird-btn" aria-label="벌새">🐦</button>
+          <!-- 유령/벌새 능력 제거됨 — JS 호환용 숨겨진 요소 -->
+          <div style="display:none !important">
+            <div id="ghost-info"></div>
+            <button id="ghost-btn"></button>
+            <div id="bird-info"></div>
+            <button id="bird-btn"></button>
           </div>
           <button id="jump-btn" class="ctrl-btn" aria-label="점프"><span style="font-size:22px;line-height:1;">⤴</span><span style="font-size:11px;font-weight:bold;line-height:1;margin-top:2px;">점프</span></button>
         </div>
