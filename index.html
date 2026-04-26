@@ -647,7 +647,7 @@
             <p>✈️ 조종사 - 점프 높이↑+두번점프 [8000원]</p>
             <p>🧑‍⚕️ 의사 - 1번 부활 [5000원]</p>
             <p>🧙 마법사 - 가시 작아짐 [10000원]</p>
-            <p>😇 천사 - 5번 부활 [3라 깨면]</p>
+            <p>😇 천사 - 3번 부활 [3라 깨면]</p>
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
@@ -873,7 +873,7 @@
       { key: 'pilotJump',    icon: '✈️', name: '비행기 조종사의 능력', desc: '점프 높이 ↑ + 두 번 점프', cost: 8000, unlock: 'buy' },
       { key: 'doctorRevive', icon: '🧑‍⚕️', name: '의사의 능력',         desc: '한 번 부활',            cost: 5000, unlock: 'buy'     },
       { key: 'wizardSpike',  icon: '🧙', name: '마법사의 능력',         desc: '가시 반으로 작아짐',    cost: 10000, unlock: 'buy'    },
-      { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 5번',              cost: 0,    unlock: 'clear5'  },
+      { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 3번',              cost: 0,    unlock: 'clear5'  },
       { key: 'devilKing',    icon: '👑', name: '지옥의 왕 능력',       desc: '땅의 길이가 짧아짐',    cost: 30000, unlock: 'buy'   },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
@@ -1735,7 +1735,7 @@
       // 비행기 조종사: 두 번 점프 가능
       jumpsLeft = abilities.pilotJump ? 2 : 1;
       // 부활 횟수: 의사(1) + 천사(5) 합산
-      revivesLeft = (abilities.doctorRevive ? 1 : 0) + (abilities.angelRevive5 ? 5 : 0);
+      revivesLeft = (abilities.doctorRevive ? 1 : 0) + (abilities.angelRevive5 ? 3 : 0);
       reviveUsed = false;
       // 비행기 조종사: 첫 점프는 큰 점프 (wings)
       if (abilities.pilotJump) {
