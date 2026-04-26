@@ -583,6 +583,9 @@
   <div id="wrap">
     <div id="stage">
       <canvas id="game"></canvas>
+      <!-- iOS 무음 모드 우회용 무음 오디오 -->
+      <audio id="silent-unlock" loop playsinline preload="auto"
+        src="data:audio/wav;base64,UklGRiQGAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAGAAAA"></audio>
       <div class="overlay">
         <!-- 인트로 화면 (게임 처음 진입 시) -->
         <div id="intro-screen">
@@ -3930,11 +3933,16 @@
     }
 
     document.getElementById('intro-start').addEventListener('click', () => {
-      // 모바일: 첫 터치에서 오디오 컨텍스트 미리 깨우기
+      // 모바일 오디오 unlock: HTML audio + Web Audio 둘 다
       try {
+        const sil = document.getElementById('silent-unlock');
+        if (sil) {
+          sil.volume = 0.001;
+          const p = sil.play();
+          if (p && p.catch) p.catch(() => {});
+        }
         const ctx = getAudioCtx();
         if (ctx && ctx.state === 'suspended') ctx.resume();
-        // 무음 짧은 비프로 오디오 unlock 보장
         if (ctx) {
           const o = ctx.createOscillator();
           const g = ctx.createGain();
