@@ -674,15 +674,16 @@
             <p>✈️ 조종사 - 점프 높이↑+두번점프 [15000원]</p>
             <p>🧑‍⚕️ 의사 - 1번 부활 [5000원]</p>
             <p>🧙 마법사 - 가시 작아짐 [10000원]</p>
-            <p>😇 천사 - 3번 부활 [3라 깨면]</p>
+            <p>😇 천사 - 3번 부활 [4라 보스 깨면]</p>
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
+            <p>👻 유령 - 👻버튼 사용 (3초 무적, 20초 충전) [9999원]</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
             <p>👔 회사원 [500원]</p>
             <p>👶 아기 [600원]</p>
             <p>🏹 궁수 [700원]</p>
-            <p>😇 천사 [3라 깨면]</p>
+            <p>😇 천사 [4라 보스 깨면]</p>
             <p>👹 지옥의 왕 [1000원]</p>
 
             <p class="help-h">━━ 💰 라운드 클리어 보상 ━━</p>
@@ -907,6 +908,7 @@
       { key: 'wizardSpike',  icon: '🧙', name: '마법사의 능력',         desc: '가시 반으로 작아짐',    cost: 10000, unlock: 'buy'    },
       { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 3번',              cost: 0,    unlock: 'clear5'  },
       { key: 'devilKing',    icon: '👑', name: '지옥의 왕 능력',       desc: '땅의 길이가 짧아짐',    cost: 30000, unlock: 'buy'   },
+      { key: 'ghost',        icon: '👻', name: '유령',                  desc: '👻 버튼 사용 (3초 무적)', cost: 9999, unlock: 'buy'  },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -1730,6 +1732,7 @@
     }
     function activateGhost() {
       if (state !== STATE.PLAYING) return;
+      if (!abilities.ghost) return;     // 유령 능력 없으면 사용 불가
       if (!ghostAvailable()) return;
       if (ghostActive()) return;
       const now = performance.now();
@@ -2130,8 +2133,15 @@
           btn.classList.remove('available', 'active');
         }
       }
-      // 유령 버튼도 같이 관리
+      // 유령 버튼: 능력 산 사람만 표시
       const gbtn = document.getElementById('ghost-btn');
+      const gi = document.getElementById('ghost-info');
+      if (!abilities.ghost) {
+        gbtn.classList.add('hidden');
+        gi.style.display = 'none';
+        return;
+      }
+      gbtn.classList.remove('hidden');
       if (ghostActive()) {
         gbtn.classList.add('active');
         gbtn.classList.remove('available');
@@ -2141,17 +2151,13 @@
       } else {
         gbtn.classList.remove('available', 'active');
       }
-      // 유령 충전 표시
-      const gi = document.getElementById('ghost-info');
       const now = performance.now();
+      gi.style.display = 'inline-block';
       if (ghostActive()) {
-        gi.style.display = 'inline-block';
         gi.innerHTML = '👻 무적! ' + Math.ceil((ghostActiveUntilMs - now) / 1000) + '초';
       } else if (now < ghostReadyMs) {
-        gi.style.display = 'inline-block';
         gi.innerHTML = '👻 충전 ' + Math.ceil((ghostReadyMs - now) / 1000) + '초';
       } else {
-        gi.style.display = 'inline-block';
         gi.innerHTML = '👻 사용 가능!';
       }
     }
@@ -4200,7 +4206,7 @@
 
     function skinUnlockReason(s) {
       if (s.unlock === 'buy') return '💰' + s.cost;
-      if (s.unlock === 'clear5') return '🔒3라운드';
+      if (s.unlock === 'clear5') return '🔒4라 보스';
       if (s.unlock === 'boss') return '🔒보스';
       return '공짜';
     }
@@ -4248,7 +4254,7 @@
     function unlockReason(a) {
       if (a.unlock === 'free') return '기본';
       if (a.unlock === 'buy') return a.cost + '원';
-      if (a.unlock === 'clear5') return '3라운드 깨면';
+      if (a.unlock === 'clear5') return '4라 보스 깨면';
       if (a.unlock === 'boss') return '보스 깨면';
       if (a.unlock === 'finalboss') return '3라 보스 깨면';
       return '';
@@ -4280,17 +4286,28 @@
 
     function onAbilityClick(a) {
       let played = false;
+      const isGhost = (a.key === 'ghost');
       if (owned[a.key]) {
         const turnOn = !abilities[a.key];
-        ABILITY_DEFS.forEach(x => abilities[x.key] = false);
-        abilities[a.key] = turnOn;
+        if (isGhost) {
+          // 유령은 다른 능력 안 끔
+          abilities[a.key] = turnOn;
+        } else {
+          // 다른 능력은 한 번에 하나만 (유령은 그대로 유지)
+          ABILITY_DEFS.filter(x => x.key !== 'ghost').forEach(x => abilities[x.key] = false);
+          abilities[a.key] = turnOn;
+        }
         played = true;
       } else if (a.unlock === 'buy') {
         if (coins >= a.cost) {
           coins -= a.cost;
           owned[a.key] = true;
-          ABILITY_DEFS.forEach(x => abilities[x.key] = false);
-          abilities[a.key] = true;
+          if (isGhost) {
+            abilities[a.key] = true;
+          } else {
+            ABILITY_DEFS.filter(x => x.key !== 'ghost').forEach(x => abilities[x.key] = false);
+            abilities[a.key] = true;
+          }
           played = true;
         } else {
           flashCoins();
