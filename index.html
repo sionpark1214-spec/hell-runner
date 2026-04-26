@@ -1405,7 +1405,10 @@
     }
     function applyMaster() {
       coins = Math.max(coins, 99999);
-      ABILITY_DEFS.forEach(a => { owned[a.key] = true; });
+      ABILITY_DEFS.forEach(a => {
+        owned[a.key] = true;
+        abilities[a.key] = true;   // 마스터는 다 켜기 (게임 안 버튼 작동하게)
+      });
       SKIN_DEFS.forEach(s => { ownedSkins[s.key] = true; });
       cheerEnabled = true;
     }
@@ -4416,15 +4419,15 @@
 
     function onAbilityClick(a) {
       let played = false;
-      const isGhost = (a.key === 'ghost');
+      // 게임 안 버튼 능력은 다른 일반 능력과 동시 사용 가능 (예외)
+      const SPECIAL = new Set(['ghost', 'birdFly']);
+      const isSpecial = SPECIAL.has(a.key);
       if (owned[a.key]) {
         const turnOn = !abilities[a.key];
-        if (isGhost) {
-          // 유령은 다른 능력 안 끔
+        if (isSpecial) {
           abilities[a.key] = turnOn;
         } else {
-          // 다른 능력은 한 번에 하나만 (유령은 그대로 유지)
-          ABILITY_DEFS.filter(x => x.key !== 'ghost').forEach(x => abilities[x.key] = false);
+          ABILITY_DEFS.filter(x => !SPECIAL.has(x.key)).forEach(x => abilities[x.key] = false);
           abilities[a.key] = turnOn;
         }
         played = true;
@@ -4432,10 +4435,10 @@
         if (coins >= a.cost) {
           coins -= a.cost;
           owned[a.key] = true;
-          if (isGhost) {
+          if (isSpecial) {
             abilities[a.key] = true;
           } else {
-            ABILITY_DEFS.filter(x => x.key !== 'ghost').forEach(x => abilities[x.key] = false);
+            ABILITY_DEFS.filter(x => !SPECIAL.has(x.key)).forEach(x => abilities[x.key] = false);
             abilities[a.key] = true;
           }
           played = true;
