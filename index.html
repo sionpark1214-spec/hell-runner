@@ -431,6 +431,26 @@
       to   { box-shadow: 0 0 22px #ce93d8, 0 0 40px #ba68c8; border-color: #fff; }
     }
     .ghost-info { color: #e1bee7; border-color: rgba(206, 147, 216, 0.5); }
+    .bird-btn {
+      background: rgba(129, 199, 132, 0.18);
+      border-color: rgba(165, 214, 167, 0.85);
+    }
+    #bird-btn.available {
+      animation: birdBlink 0.6s infinite alternate;
+      border-color: #a5d6a7;
+      background: rgba(165, 214, 167, 0.30);
+    }
+    #bird-btn.active {
+      background: rgba(165, 214, 167, 0.7);
+      border-color: #fff;
+      box-shadow: 0 0 25px #66bb6a, 0 0 45px #4caf50;
+      animation: none;
+    }
+    @keyframes birdBlink {
+      from { box-shadow: 0 0 6px #66bb6a; border-color: #a5d6a7; }
+      to   { box-shadow: 0 0 22px #66bb6a, 0 0 40px #4caf50; border-color: #fff; }
+    }
+    .bird-info { color: #a5d6a7; border-color: rgba(102, 187, 106, 0.5); }
     @keyframes blink {
       from {
         box-shadow: 0 0 6px #ffeb3b;
@@ -657,6 +677,7 @@
             <p>👆 <b>점프</b> 짧게 톡 / 길게 꾹 = 더 높이</p>
             <p>⚡ <b>부스터</b> 무적+가속, 끝에 큰 점프</p>
             <p>👻 <b>유령</b> 3초 무적 (20초 충전)</p>
+            <p>🐦 <b>벌새</b> 6초 비행 (30초 충전)</p>
 
             <p class="help-h">━━ 🛣️ 길에서 만나는 것 ━━</p>
             <p>🔺 <b>가시</b> 닿으면 죽음! (불·얼음·회색)</p>
@@ -676,7 +697,9 @@
             <p>🧙 마법사 - 가시 작아짐 [10000원]</p>
             <p>😇 천사 - 3번 부활 [4라 보스 깨면]</p>
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
-            <p>👻 유령 - 👻버튼 사용 (3초 무적, 20초 충전) [9999원]</p>
+            <p>👻 유령 - 👻버튼 (3초 무적) [15000원]</p>
+            <p>🦣 거인 - 가시 부숨, 느림 [99999원]</p>
+            <p>🐦 벌새 - 🐦버튼 (6초 비행) [20000원]</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
@@ -765,6 +788,10 @@
           <div class="bolt-stack">
             <div id="ghost-info" class="bolt-info ghost-info" style="display:none">👻 충전</div>
             <button id="ghost-btn" class="ctrl-btn ghost-btn" aria-label="유령">👻</button>
+          </div>
+          <div class="bolt-stack">
+            <div id="bird-info" class="bolt-info bird-info" style="display:none">🐦 충전</div>
+            <button id="bird-btn" class="ctrl-btn bird-btn" aria-label="벌새">🐦</button>
           </div>
           <button id="jump-btn" class="ctrl-btn" aria-label="점프"><span style="font-size:22px;line-height:1;">⤴</span><span style="font-size:11px;font-weight:bold;line-height:1;margin-top:2px;">점프</span></button>
         </div>
@@ -878,6 +905,10 @@
     let ghostReadyMs = 0;
     const GHOST_DURATION_MS = 3000;
     const GHOST_COOLDOWN_MS = 20000;
+    let birdFlyActiveUntilMs = 0;       // 벌새 비행 (6초)
+    let birdFlyReadyMs = 0;
+    const BIRD_DURATION_MS = 6000;
+    const BIRD_COOLDOWN_MS = 30000;
     let finishInvincibleUntilMs = 0;    // 부스터 끝 점프 동안 잠깐 무적
     let finishBurstAtMs = 0;            // 폭발 이펙트 표시용
     let lastFrameMs = performance.now();
@@ -908,7 +939,9 @@
       { key: 'wizardSpike',  icon: '🧙', name: '마법사의 능력',         desc: '가시 반으로 작아짐',    cost: 10000, unlock: 'buy'    },
       { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 3번',              cost: 0,    unlock: 'clear5'  },
       { key: 'devilKing',    icon: '👑', name: '지옥의 왕 능력',       desc: '땅의 길이가 짧아짐',    cost: 30000, unlock: 'buy'   },
-      { key: 'ghost',        icon: '👻', name: '유령',                  desc: '👻 버튼 사용 (3초 무적)', cost: 9999, unlock: 'buy'  },
+      { key: 'ghost',        icon: '👻', name: '유령',                  desc: '👻 버튼 사용 (3초 무적)', cost: 15000, unlock: 'buy' },
+      { key: 'giant',        icon: '🦣', name: '거인',                  desc: '몸 크고 느리지만 가시 부숨', cost: 99999, unlock: 'buy' },
+      { key: 'birdFly',      icon: '🐦', name: '벌새',                  desc: '🐦 버튼 사용 (6초 비행)', cost: 20000, unlock: 'buy' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -1724,6 +1757,24 @@
     function isInvincible() {
       return boltActive() || ghostActive() || performance.now() < finishInvincibleUntilMs;
     }
+    function birdFlyActive() {
+      return performance.now() < birdFlyActiveUntilMs;
+    }
+    function birdFlyAvailable() {
+      return performance.now() >= birdFlyReadyMs;
+    }
+    function activateBirdFly() {
+      if (state !== STATE.PLAYING) return;
+      if (!abilities.birdFly) return;
+      if (!birdFlyAvailable()) return;
+      if (birdFlyActive()) return;
+      const now = performance.now();
+      birdFlyActiveUntilMs = now + BIRD_DURATION_MS;
+      birdFlyReadyMs = birdFlyActiveUntilMs + BIRD_COOLDOWN_MS;
+      // 비행 시작: 살짝 위로
+      player.vy = -4;
+      player.onGround = false;
+    }
     function ghostActive() {
       return performance.now() < ghostActiveUntilMs;
     }
@@ -1857,8 +1908,10 @@
       spikeShards = [];
       wingsCharged = false;
       isFinalBoss = false;
-      // 비행기 조종사: 두 번 점프 가능
+      // 비행기 조종사: 두 번 점프 가능 / 벌새 비행 중에도 무한 점프
       jumpsLeft = abilities.pilotJump ? 2 : 1;
+      birdFlyActiveUntilMs = 0;
+      birdFlyReadyMs = 0;
       // 부활 횟수: 의사(1) + 천사(5) 합산
       revivesLeft = (abilities.doctorRevive ? 1 : 0) + (abilities.angelRevive5 ? 3 : 0);
       reviveUsed = false;
@@ -1866,8 +1919,11 @@
       if (abilities.pilotJump) {
         wingsCharged = true;
       }
-      // 소년: 좀 더 빨라짐
-      player.speed = abilities.kidSpeed ? BASE_SPEED * 1.18 : BASE_SPEED;
+      // 챔피언: 빠름, 거인: 느림
+      let baseS = BASE_SPEED;
+      if (abilities.kidSpeed) baseS = BASE_SPEED * 1.18;
+      if (abilities.giant)    baseS = BASE_SPEED * 0.7;
+      player.speed = baseS;
 
       if (bossMode) {
         // 보스 모드: 빈 땅, 보스 추격전
@@ -2160,6 +2216,32 @@
       } else {
         gi.innerHTML = '👻 사용 가능!';
       }
+      // 벌새 버튼
+      const bbtn = document.getElementById('bird-btn');
+      const bi = document.getElementById('bird-info');
+      if (!abilities.birdFly) {
+        bbtn.classList.add('hidden');
+        bi.style.display = 'none';
+      } else {
+        bbtn.classList.remove('hidden');
+        if (birdFlyActive()) {
+          bbtn.classList.add('active');
+          bbtn.classList.remove('available');
+        } else if (birdFlyAvailable()) {
+          bbtn.classList.add('available');
+          bbtn.classList.remove('active');
+        } else {
+          bbtn.classList.remove('available', 'active');
+        }
+        bi.style.display = 'inline-block';
+        if (birdFlyActive()) {
+          bi.innerHTML = '🐦 비행! ' + Math.ceil((birdFlyActiveUntilMs - now) / 1000) + '초';
+        } else if (now < birdFlyReadyMs) {
+          bi.innerHTML = '🐦 충전 ' + Math.ceil((birdFlyReadyMs - now) / 1000) + '초';
+        } else {
+          bi.innerHTML = '🐦 사용 가능!';
+        }
+      }
     }
 
     function updateHud() {
@@ -2207,7 +2289,13 @@
         const prevBottom = player.y + PLAYER_H;
         // 가변 점프: 점프 버튼 누르고 있고, 아직 한도 안 넘었고, 상승 중일 때만 약한 중력
         const usingHold = isJumpHeld && jumpHoldFrames < MAX_HOLD_FRAMES && player.vy < 0;
-        if (usingHold) {
+        if (birdFlyActive()) {
+          // 벌새 비행: 중력 매우 약하게 (천천히 떨어짐, 점프로 다시 올라감)
+          player.vy += 0.06;
+          // 너무 빨리 떨어지지 않게
+          if (player.vy > 2.5) player.vy = 2.5;
+          jumpsLeft = 99;   // 무한 점프
+        } else if (usingHold) {
           player.vy += HOLD_GRAVITY;
           jumpHoldFrames++;
         } else {
@@ -2283,8 +2371,15 @@
         // 가시 충돌 (무적 아닐 때만)
         if (!isInvincible()) {
           const ph = { x: player.x + 2, y: player.y + 2, w: PLAYER_W - 4, h: PLAYER_H - 4 };
-          for (const s of spikes) {
+          for (let i = spikes.length - 1; i >= 0; i--) {
+            const s = spikes[i];
             if (rectsOverlap(ph, spikeHitbox(s))) {
+              if (abilities.giant) {
+                // 거인은 가시 부숨!
+                spawnSpikeBreak(s.x + s.w / 2, s.y + s.h / 2);
+                spikes.splice(i, 1);
+                continue;
+              }
               die();
               return;
             }
@@ -4016,19 +4111,54 @@
       drawWings();
       if (state === STATE.DEAD) {
         drawPieces();
-      } else if (ghostActive() && !boltActive()) {
-        ctx.save();
-        ctx.globalAlpha = 0.55;
-        drawPlayer();
-        // 보라 글로우 후광
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = 'rgba(206, 147, 216, 0.4)';
-        ctx.beginPath();
-        ctx.arc(player.x + PLAYER_W/2, player.y + PLAYER_H/2, 22, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
       } else {
+        ctx.save();
+        // 거인: 캐릭터 2배 크게 (시각만, 충돌은 정상)
+        if (abilities.giant) {
+          const cx = player.x + PLAYER_W / 2;
+          const baseY = player.y + PLAYER_H;
+          ctx.translate(cx, baseY);
+          ctx.scale(1.8, 1.8);
+          ctx.translate(-cx, -baseY);
+        }
+        // 유령: 반투명
+        if (ghostActive() && !boltActive()) {
+          ctx.globalAlpha = 0.55;
+        }
         drawPlayer();
+        // 유령 보라 후광
+        if (ghostActive() && !boltActive()) {
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.fillStyle = 'rgba(206, 147, 216, 0.4)';
+          ctx.beginPath();
+          ctx.arc(player.x + PLAYER_W/2, player.y + PLAYER_H/2, 22, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // 벌새: 작은 날개 펄럭이는 시각
+        if (birdFlyActive()) {
+          const t = performance.now();
+          const flap = Math.sin(t * 0.04) * 0.6;
+          ctx.fillStyle = '#fff';
+          ctx.strokeStyle = '#388e3c';
+          ctx.lineWidth = 1;
+          // 왼 날개
+          ctx.save();
+          ctx.translate(player.x + 2, player.y + PLAYER_H/2);
+          ctx.rotate(-0.4 - flap);
+          ctx.beginPath();
+          ctx.ellipse(-6, 0, 8, 3, 0, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+          // 오른 날개
+          ctx.save();
+          ctx.translate(player.x + PLAYER_W - 2, player.y + PLAYER_H/2);
+          ctx.rotate(0.4 + flap);
+          ctx.beginPath();
+          ctx.ellipse(6, 0, 8, 3, 0, 0, Math.PI * 2);
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
       }
       ctx.restore();
     }
@@ -4377,6 +4507,7 @@
     bindButton('jump-btn', jumpStart, jumpRelease);
     bindButton('bolt-btn', activateBolt);
     bindButton('ghost-btn', activateGhost);
+    bindButton('bird-btn', activateBirdFly);
 
     // 키보드 (PC 테스트용)
     window.addEventListener('keydown', (e) => {
