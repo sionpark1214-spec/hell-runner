@@ -601,7 +601,7 @@
         <div id="start-screen" class="screen hidden">
           <h1>🔥 지옥 달리기 🔥</h1>
           <p>가시 피하면서 끝까지 달려!</p>
-          <p class="small">라운드 <span id="start-round">1</span> / 5</p>
+          <p class="small">라운드 <span id="start-round">1</span> / 3</p>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
               <button id="help-btn" class="help-btn">❓ 도움말</button>
@@ -638,7 +638,7 @@
 
             <p class="help-h">━━ 🏁 라운드 ━━</p>
             <p>1~4라운드 가시 피하고 끝까지!</p>
-            <p>5라운드 끝에 👹 <b>미니 보스</b> 등장</p>
+            <p>3라운드 끝에 👹 <b>미니 보스</b> 등장</p>
             <p>보스 30초 버티면 자폭!</p>
 
             <p class="help-h">━━ ⚡ 능력 (한 번에 하나) ━━</p>
@@ -647,7 +647,7 @@
             <p>✈️ 조종사 - 점프 높이↑+두번점프 [8000원]</p>
             <p>🧑‍⚕️ 의사 - 1번 부활 [5000원]</p>
             <p>🧙 마법사 - 가시 작아짐 [10000원]</p>
-            <p>😇 천사 - 5번 부활 [5라 깨면]</p>
+            <p>😇 천사 - 5번 부활 [3라 깨면]</p>
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
@@ -655,13 +655,13 @@
             <p>👔 회사원 [500원]</p>
             <p>👶 아기 [600원]</p>
             <p>🏹 궁수 [700원]</p>
-            <p>😇 천사 [5라 깨면]</p>
+            <p>😇 천사 [3라 깨면]</p>
             <p>👹 지옥의 왕 [1000원]</p>
 
             <p class="help-h">━━ 💰 라운드 클리어 보상 ━━</p>
             <p>1라 = 100원 / 2라 = 200원</p>
             <p>3라 = 300원 / 4라 = 400원</p>
-            <p>5라 (보스 포함) = 500원</p>
+            <p>3라 (보스 포함) = 500원</p>
 
             <p class="help-h">━━ 🎁 비밀 코드 ━━</p>
             <p>코드 입력하면 선물!</p>
@@ -718,7 +718,7 @@
         <!-- 게임 끝 화면 -->
         <div id="end-screen" class="screen hidden">
           <h1>🏆 게임 클리어! 🏆</h1>
-          <p>5라운드까지 다 깼어! 너 진짜 대단해!</p>
+          <p>3라운드까지 다 깼어! 너 진짜 대단해!</p>
           <button id="restart-btn">처음부터 다시</button>
         </div>
 
@@ -829,7 +829,7 @@
     let bossLaughUntilMs = 0;      // 보스 말풍선 표시 시각
     let bossLaughText = '으하하하!';
     let bossRageStartedAt = 0;     // 분노 모드 진입 시각 (0이면 아직)
-    let isFinalBoss = false;       // 5라운드 끝 미니 보스
+    let isFinalBoss = false;       // 3라운드 끝 미니 보스
     const FINAL_BOSS_MS = 30 * 1000;  // 30초만 버티면 됨 (어렵지만 깰 수 있음)
     function isBossEnraged() {
       return bossMode && bossActive && bossStartMs > 0 &&
@@ -1358,15 +1358,6 @@
       3: [
         "                                                                                                                                                                  ㅂ                                                                                                                                                                                                                                                                                                                                                                                ",
         "    ㅅㅆ      ㅆ      ㅆㅅ      ㅆㅅ    ㅆ      ㅅㅆ      ㅆ      ㅆㅅ      ㅅㅅㅆ      ㅆ        ㅆㅅ      ㅆ        ㅅㅆ      ㅆ    ㅆㅅ    ㅅㅆ      ㅆ      ㅆㅅ      ㅆㅅ    ㅆ      ㅅㅆ    ㅆ        ㅆㅅ      ㅅㅅㅆ      ㅆ        ㅆㅅ      ㅆ        ㅅㅆ      ㅆ    ㅆㅅ    ㅅㅆ    ㅆ    ㅆㅅ    ㅅㅆ    ㅆㅅ  ㅆ    ㅅㅅㅆ    ㅆㅅ    ㅆ    ㅅㅆ    ㅆ    ㅆㅅ    ㅅㅅㅆ    ㅆ    ㅆㅅ  ㅆㅅ    ㅆ    ㅅㅆ    ㅆㅅ    ㅆ    ㅅㅅㅆ    ㅆㅅ    ㅆ    ㅅㅆ    ㅆ    ㅆㅅ  ",
-      ],
-      // 라운드 4: 매우 어려움 — 아이템 1개, 가시 더 빽빽
-      4: [
-        "                                                                                                                                                                                                  ㅂ                                                                                                                                                                                                                          ",
-        "  ㅅㅆ    ㅆㅅ    ㅆ      ㅅㅅㅆ    ㅆ      ㅆㅅ    ㅅㅆ      ㅆ      ㅆㅅ      ㅅㅅㅆ    ㅆ        ㅆㅅ    ㅆ      ㅅㅆ    ㅆㅅ    ㅆ      ㅅㅆ      ㅆㅅ      ㅆ      ㅅㅅㅆ    ㅆ        ㅆㅅ      ㅅㅆ    ㅆㅅ      ㅆ        ㅅㅅㅆ      ㅆ      ㅆㅅ      ㅅㅆ    ㅆ        ㅆㅅ      ㅅㅆ      ㅆ      ㅆㅅ    ㅅㅆ    ",
-      ],
-      // 라운드 5: 지옥 끝판왕! 아이템 0개, 가시 매우 빽빽
-      5: [
-        "  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ",
       ],
       // 👹 보스 모드: 거대한 보스 마스크가 위에서 노려봄. 가장 길고 어려움. 아이템 약간 있음.
       boss: [
@@ -1914,7 +1905,7 @@
       hideControls();
       hideHud();
       rewardClear();
-      if (bossMode || round === 5) {
+      if (bossMode || round === 3) {
         const end = document.getElementById('end-screen');
         const endH1 = end.querySelector('h1');
         const endP = end.querySelector('p');
@@ -1922,11 +1913,11 @@
           endH1.textContent = '⚡ 보스 자폭! ⚡';
           endP.textContent = '3분 버텼다! 보스가 자기 번개에 맞았어!';
         } else if (isFinalBoss) {
-          endH1.textContent = '👹 5라 보스 클리어! 👹';
+          endH1.textContent = '👹 3라 보스 클리어! 👹';
           endP.textContent = '보스도 이겼어! 너 진짜 최고!';
         } else {
           endH1.textContent = '🏆 게임 클리어! 🏆';
-          endP.textContent = '5라운드까지 다 깼어! 너 진짜 대단해!';
+          endP.textContent = '3라운드까지 다 깼어! 너 진짜 대단해!';
         }
         end.classList.remove('hidden');
       } else {
@@ -2177,8 +2168,8 @@
           }
         }
 
-        // 5라운드 끝 부근 도달 → 미니 보스 등장!
-        if (round === 5 && !bossMode && !isFinalBoss && player.x >= MAP_LEN - 1500) {
+        // 3라운드 끝 부근 도달 → 미니 보스 등장!
+        if (round === 3 && !bossMode && !isFinalBoss && player.x >= MAP_LEN - 1500) {
           isFinalBoss = true;
           bossActive = true;
           bossPos.x = player.x + BOSS_FOLLOW_GAP;
@@ -2231,7 +2222,7 @@
             // 위아래로 살짝 흔들림 (망토 펄럭이는 느낌)
             bossPos.y = BOSS_BASE_Y + Math.sin(now * 0.003) * 4;
 
-            // 번개 발사 — 단계별 (초반 어려움 / 중반 보통 / 분노 어려움 / 5라 보스 빠름)
+            // 번개 발사 — 단계별 (초반 어려움 / 중반 보통 / 분노 어려움 / 3라 보스 빠름)
             const enraged = isBossEnraged();
             const early = isBossEarly();
             const interval = enraged ? 1200 : early ? 1100 : isFinalBoss ? 1300 : BOSS_SHOOT_INTERVAL_MS;
@@ -4032,7 +4023,7 @@
 
     function skinUnlockReason(s) {
       if (s.unlock === 'buy') return '💰' + s.cost;
-      if (s.unlock === 'clear5') return '🔒5라운드';
+      if (s.unlock === 'clear5') return '🔒3라운드';
       if (s.unlock === 'boss') return '🔒보스';
       return '공짜';
     }
@@ -4080,9 +4071,9 @@
     function unlockReason(a) {
       if (a.unlock === 'free') return '기본';
       if (a.unlock === 'buy') return a.cost + '원';
-      if (a.unlock === 'clear5') return '5라운드 깨면';
+      if (a.unlock === 'clear5') return '3라운드 깨면';
       if (a.unlock === 'boss') return '보스 깨면';
-      if (a.unlock === 'finalboss') return '5라 보스 깨면';
+      if (a.unlock === 'finalboss') return '3라 보스 깨면';
       return '';
     }
 
@@ -4178,11 +4169,11 @@
         }
       } else {
         coins += 100 * round;
-        if (round === 5) {
+        if (round === 3) {
           owned['angelRevive5'] = true;   // 천사의 능력
           ownedSkins['angel'] = true;     // 천사 스킨
           if (isFinalBoss) {
-            owned['devilKing'] = true;    // 5라 보스 깨면 지옥의 왕 능력
+            owned['devilKing'] = true;    // 3라 보스 깨면 지옥의 왕 능력
           }
         }
       }
