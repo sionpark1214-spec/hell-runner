@@ -3930,6 +3930,20 @@
     }
 
     document.getElementById('intro-start').addEventListener('click', () => {
+      // 모바일: 첫 터치에서 오디오 컨텍스트 미리 깨우기
+      try {
+        const ctx = getAudioCtx();
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+        // 무음 짧은 비프로 오디오 unlock 보장
+        if (ctx) {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          g.gain.value = 0.0001;
+          o.connect(g).connect(ctx.destination);
+          o.start();
+          o.stop(ctx.currentTime + 0.01);
+        }
+      } catch (e) {}
       document.getElementById('intro-screen').classList.add('hidden');
       document.getElementById('start-screen').classList.remove('hidden');
     });
