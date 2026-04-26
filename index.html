@@ -1322,6 +1322,16 @@
 
     // ====== 저장/불러오기 (다시 들어와도 유지) ======
     const SAVE_KEY = 'hellRunner_save_v2';   // v2: 모든 사람 능력/돈 초기화
+    // 강제 초기화 마커 — 이 버전 처음 들어온 사용자는 자동으로 옛 데이터 삭제
+    const RESET_MARKER_KEY = 'hellRunner_reset_done';
+    const RESET_VERSION = 'v2-2026-04-26';
+    try {
+      if (localStorage.getItem(RESET_MARKER_KEY) !== RESET_VERSION) {
+        localStorage.removeItem('hellRunner_save_v1');
+        localStorage.removeItem('hellRunner_save_v2');   // v2도 초기화 (한 번만)
+        localStorage.setItem(RESET_MARKER_KEY, RESET_VERSION);
+      }
+    } catch (e) {}
     function saveProgress() {
       try {
         const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats };
