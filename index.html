@@ -411,6 +411,26 @@
       box-shadow: 0 0 25px #ffeb3b, 0 0 45px #ff0;
       animation: none;
     }
+    .ghost-btn {
+      background: rgba(186, 104, 200, 0.18);
+      border-color: rgba(225, 190, 231, 0.85);
+    }
+    #ghost-btn.available {
+      animation: ghostBlink 0.6s infinite alternate;
+      border-color: #ce93d8;
+      background: rgba(206, 147, 216, 0.30);
+    }
+    #ghost-btn.active {
+      background: rgba(225, 190, 231, 0.7);
+      border-color: #fff;
+      box-shadow: 0 0 25px #ce93d8, 0 0 45px #ba68c8;
+      animation: none;
+    }
+    @keyframes ghostBlink {
+      from { box-shadow: 0 0 6px #ce93d8; border-color: #ce93d8; }
+      to   { box-shadow: 0 0 22px #ce93d8, 0 0 40px #ba68c8; border-color: #fff; }
+    }
+    .ghost-info { color: #e1bee7; border-color: rgba(206, 147, 216, 0.5); }
     @keyframes blink {
       from {
         box-shadow: 0 0 6px #ffeb3b;
@@ -636,6 +656,7 @@
             <p class="help-h">━━ ⚙️ 조작 ━━</p>
             <p>👆 <b>점프</b> 짧게 톡 / 길게 꾹 = 더 높이</p>
             <p>⚡ <b>부스터</b> 무적+가속, 끝에 큰 점프</p>
+            <p>👻 <b>유령</b> 3초 무적 (20초 충전)</p>
 
             <p class="help-h">━━ 🛣️ 길에서 만나는 것 ━━</p>
             <p>🔺 <b>가시</b> 닿으면 죽음! (불·얼음·회색)</p>
@@ -739,6 +760,10 @@
           <div class="bolt-stack">
             <div id="bolt-info" class="bolt-info" style="display:none">⚡ 충전 중: 12초</div>
             <button id="bolt-btn" class="ctrl-btn" aria-label="전기">⚡</button>
+          </div>
+          <div class="bolt-stack">
+            <div id="ghost-info" class="bolt-info ghost-info" style="display:none">👻 충전</div>
+            <button id="ghost-btn" class="ctrl-btn ghost-btn" aria-label="유령">👻</button>
           </div>
           <button id="jump-btn" class="ctrl-btn" aria-label="점프"><span style="font-size:22px;line-height:1;">⤴</span><span style="font-size:11px;font-weight:bold;line-height:1;margin-top:2px;">점프</span></button>
         </div>
@@ -848,6 +873,10 @@
     let gameStartMs = 0;
     let boltActiveUntilMs = 0;
     let boltReadyMs = 0;                // 이 시각 이후로 다시 사용 가능
+    let ghostActiveUntilMs = 0;         // 유령 모드 (3초 무적)
+    let ghostReadyMs = 0;
+    const GHOST_DURATION_MS = 3000;
+    const GHOST_COOLDOWN_MS = 20000;
     let finishInvincibleUntilMs = 0;    // 부스터 끝 점프 동안 잠깐 무적
     let finishBurstAtMs = 0;            // 폭발 이펙트 표시용
     let lastFrameMs = performance.now();
@@ -1691,7 +1720,40 @@
       return performance.now() < boltActiveUntilMs;
     }
     function isInvincible() {
-      return boltActive() || performance.now() < finishInvincibleUntilMs;
+      return boltActive() || ghostActive() || performance.now() < finishInvincibleUntilMs;
+    }
+    function ghostActive() {
+      return performance.now() < ghostActiveUntilMs;
+    }
+    function ghostAvailable() {
+      return performance.now() >= ghostReadyMs;
+    }
+    function activateGhost() {
+      if (state !== STATE.PLAYING) return;
+      if (!ghostAvailable()) return;
+      if (ghostActive()) return;
+      const now = performance.now();
+      ghostActiveUntilMs = now + GHOST_DURATION_MS;
+      ghostReadyMs = ghostActiveUntilMs + GHOST_COOLDOWN_MS;
+      playGhostSound();
+    }
+    function playGhostSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      // 으스스한 sweep down (유령 분위기)
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.6);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.75);
     }
 
     function triggerEruption() {
@@ -1785,6 +1847,8 @@
       jumpHoldFrames = 0;
       camera.x = 0;
       boltActiveUntilMs = 0;
+      ghostActiveUntilMs = 0;
+      ghostReadyMs = 0;
       finishInvincibleUntilMs = 0;
       finishBurstAtMs = 0;
       spikeShards = [];
@@ -2054,17 +2118,41 @@
       const btn = document.getElementById('bolt-btn');
       if ((round >= 3 || bossMode)) {
         btn.classList.add('hidden');
-        return;
-      }
-      btn.classList.remove('hidden');
-      if (boltActive()) {
-        btn.classList.add('active');
-        btn.classList.remove('available');
-      } else if (boltAvailable()) {
-        btn.classList.add('available');
-        btn.classList.remove('active');
       } else {
-        btn.classList.remove('available', 'active');
+        btn.classList.remove('hidden');
+        if (boltActive()) {
+          btn.classList.add('active');
+          btn.classList.remove('available');
+        } else if (boltAvailable()) {
+          btn.classList.add('available');
+          btn.classList.remove('active');
+        } else {
+          btn.classList.remove('available', 'active');
+        }
+      }
+      // 유령 버튼도 같이 관리
+      const gbtn = document.getElementById('ghost-btn');
+      if (ghostActive()) {
+        gbtn.classList.add('active');
+        gbtn.classList.remove('available');
+      } else if (ghostAvailable()) {
+        gbtn.classList.add('available');
+        gbtn.classList.remove('active');
+      } else {
+        gbtn.classList.remove('available', 'active');
+      }
+      // 유령 충전 표시
+      const gi = document.getElementById('ghost-info');
+      const now = performance.now();
+      if (ghostActive()) {
+        gi.style.display = 'inline-block';
+        gi.innerHTML = '👻 무적! ' + Math.ceil((ghostActiveUntilMs - now) / 1000) + '초';
+      } else if (now < ghostReadyMs) {
+        gi.style.display = 'inline-block';
+        gi.innerHTML = '👻 충전 ' + Math.ceil((ghostReadyMs - now) / 1000) + '초';
+      } else {
+        gi.style.display = 'inline-block';
+        gi.innerHTML = '👻 사용 가능!';
       }
     }
 
@@ -3922,6 +4010,17 @@
       drawWings();
       if (state === STATE.DEAD) {
         drawPieces();
+      } else if (ghostActive() && !boltActive()) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        drawPlayer();
+        // 보라 글로우 후광
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = 'rgba(206, 147, 216, 0.4)';
+        ctx.beginPath();
+        ctx.arc(player.x + PLAYER_W/2, player.y + PLAYER_H/2, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       } else {
         drawPlayer();
       }
@@ -4260,6 +4359,7 @@
 
     bindButton('jump-btn', jumpStart, jumpRelease);
     bindButton('bolt-btn', activateBolt);
+    bindButton('ghost-btn', activateGhost);
 
     // 키보드 (PC 테스트용)
     window.addEventListener('keydown', (e) => {
