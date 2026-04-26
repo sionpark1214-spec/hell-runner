@@ -607,7 +607,7 @@
         <div id="start-screen" class="screen hidden">
           <h1>🔥 지옥 달리기 🔥</h1>
           <p>가시 피하면서 끝까지 달려!</p>
-          <p class="small">라운드 <span id="start-round">1</span> / 3</p>
+          <p class="small">라운드 <span id="start-round">1</span> / 4</p>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
               <button id="help-btn" class="help-btn">❓ 도움말</button>
@@ -643,8 +643,8 @@
             <p>👟 <b>날개신발</b> 다음 점프 엄청 높이</p>
 
             <p class="help-h">━━ 🏁 라운드 ━━</p>
-            <p>1~2라운드 가시 피하고 끝까지!</p>
-            <p>3라운드 끝에 👹 <b>미니 보스</b> 등장</p>
+            <p>1~3라운드 가시 피하고 끝까지!</p>
+            <p>4라운드 끝에 👹 <b>미니 보스</b> 등장</p>
             <p>보스 30초 버티면 자폭!</p>
 
             <p class="help-h">━━ ⚡ 능력 (한 번에 하나) ━━</p>
@@ -667,7 +667,8 @@
             <p class="help-h">━━ 💰 라운드 클리어 보상 ━━</p>
             <p>1라 = 100원</p>
             <p>2라 = 200원</p>
-            <p>3라 (보스까지) = 300원</p>
+            <p>3라 = 300원</p>
+            <p>4라 (보스까지) = 400원</p>
 
           </div>
           <button id="help-close">알겠어!</button>
@@ -720,7 +721,7 @@
         <!-- 게임 끝 화면 -->
         <div id="end-screen" class="screen hidden">
           <h1>🏆 게임 클리어! 🏆</h1>
-          <p>3라운드까지 다 깼어! 너 진짜 대단해!</p>
+          <p>4라운드까지 다 깼어! 너 진짜 대단해!</p>
           <button id="restart-btn">처음부터 다시</button>
         </div>
 
@@ -1411,6 +1412,11 @@
         "                                                                                                                                                                  ㅂ                                                                                                                                                                                                                                                                                                                                                                                ",
         "    ㅅㅆ      ㅆ      ㅆㅅ      ㅆㅅ    ㅆ      ㅅㅆ      ㅆ      ㅆㅅ      ㅅㅅㅆ      ㅆ        ㅆㅅ      ㅆ        ㅅㅆ      ㅆ    ㅆㅅ    ㅅㅆ      ㅆ      ㅆㅅ      ㅆㅅ    ㅆ      ㅅㅆ    ㅆ        ㅆㅅ      ㅅㅅㅆ      ㅆ        ㅆㅅ      ㅆ        ㅅㅆ      ㅆ    ㅆㅅ    ㅅㅆ    ㅆ    ㅆㅅ    ㅅㅆ    ㅆㅅ  ㅆ    ㅅㅅㅆ    ㅆㅅ    ㅆ    ㅅㅆ    ㅆ    ㅆㅅ    ㅅㅅㅆ    ㅆ    ㅆㅅ  ㅆㅅ    ㅆ    ㅅㅆ    ㅆㅅ    ㅆ    ㅅㅅㅆ    ㅆㅅ    ㅆ    ㅅㅆ    ㅆ    ㅆㅅ  ",
       ],
+      // 라운드 4: 끝판왕! 가장 빽빽 + 끝에 미니 보스
+      4: [
+        "                                                                                                                                                                                                                                              ㅂ                                                                                                                                                                                                                                                                                                                                                                                              ",
+        "  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ㅆ  ㅆㅅ  ㅅㅅㅆ  ㅆㅅ  ㅆ  ㅅㅆ  ",
+      ],
       // 👹 보스 모드: 거대한 보스 마스크가 위에서 노려봄. 가장 길고 어려움. 아이템 약간 있음.
       boss: [
         "        ㅂ                              ㅍ                              ㅂ                              ㅍ                              ㅂ                              ㅂ                              ㅂ                                  ",
@@ -1958,7 +1964,7 @@
       hideControls();
       hideHud();
       rewardClear();
-      if (bossMode || round === 3) {
+      if (bossMode || round === 4) {
         const end = document.getElementById('end-screen');
         const endH1 = end.querySelector('h1');
         const endP = end.querySelector('p');
@@ -1970,7 +1976,7 @@
           endP.textContent = '보스도 이겼어! 너 진짜 최고!';
         } else {
           endH1.textContent = '🏆 게임 클리어! 🏆';
-          endP.textContent = '3라운드까지 다 깼어! 너 진짜 대단해!';
+          endP.textContent = '4라운드까지 다 깼어! 너 진짜 대단해!';
         }
         end.classList.remove('hidden');
       } else {
@@ -2222,7 +2228,7 @@
         }
 
         // 3라운드 끝 부근 도달 → 미니 보스 등장!
-        if (round === 3 && !bossMode && !isFinalBoss && player.x >= MAP_LEN - 1500) {
+        if (round === 4 && !bossMode && !isFinalBoss && player.x >= MAP_LEN - 1500) {
           isFinalBoss = true;
           bossActive = true;
           bossPos.x = player.x + BOSS_FOLLOW_GAP;
@@ -4241,7 +4247,7 @@
         }
       } else {
         coins += 100 * round;
-        if (round === 3) {
+        if (round === 4) {
           owned['angelRevive5'] = true;   // 천사의 능력
           ownedSkins['angel'] = true;     // 천사 스킨
           if (isFinalBoss) {
