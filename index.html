@@ -555,6 +555,32 @@
       80%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
       100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
     }
+    .goblin-hint {
+      position: absolute;
+      top: 28%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.88);
+      color: #ffeb3b;
+      padding: 14px 24px;
+      border-radius: 16px;
+      border: 3px solid #ffeb3b;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      text-align: center;
+      text-shadow: 0 0 10px #ff5722;
+      pointer-events: none;
+      z-index: 25;
+      animation: hintPulse 0.4s ease-in-out infinite alternate;
+      line-height: 1.5;
+    }
+    .goblin-hint.hidden { display: none; }
+    .goblin-hint b { color: #fff; font-size: 22px; display: inline-block; margin-top: 4px; }
+    @keyframes hintPulse {
+      from { box-shadow: 0 0 8px #ffeb3b; transform: translate(-50%, -50%) scale(1); }
+      to   { box-shadow: 0 0 30px #ffeb3b, 0 0 50px #ff5722; transform: translate(-50%, -50%) scale(1.05); }
+    }
     #countdown.go {
       font-size: 76px;
       color: #fff;
@@ -778,6 +804,9 @@
         <!-- 카운트다운 -->
         <div id="countdown" class="hidden"></div>
 
+        <!-- 도깨비 비밀 코드 힌트 (5% 확률 등장) -->
+        <div id="goblin-hint" class="goblin-hint hidden">⚡ 비밀 코드 ⚡<br><b>도깨비방망이</b></div>
+
         <!-- 컨트롤 -->
         <div id="controls" class="hidden">
           <div class="bolt-stack">
@@ -941,6 +970,7 @@
       { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 500000, unlock: 'buy' },
       { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
       { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 100000, unlock: 'buy' },
+      { key: 'goblin',       icon: '👺', name: '도깨비',                  desc: '5초마다 가시 3개 + 부스터 충전', cost: 0, unlock: 'code' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -983,6 +1013,8 @@
       '매력있어다이노소어크래샌도': { master: true, bigcoin: true, msg: '🌟 매력있어다이노소어크래샌도! 다 받음 + 엄청난 돈!' },
       // 사과 코드
       '미안': { coin: 6000, msg: '🙏 미안해! 6000원!' },
+      // 도깨비 능력 잠금 해제
+      '도깨비방망이': { ability: 'goblin', msg: '👺 도깨비 능력 받음!' },
     };
     let usedCodes = {};
     let stats = {
@@ -1741,7 +1773,7 @@
     function jump() { jumpStart(); }
     function activateBolt() {
       if (state !== STATE.PLAYING) return;
-      if ((round >= 3 || bossMode)) return;
+      if ((!abilities.goblin && (round >= 3 || bossMode))) return;
       if (!boltAvailable()) return;
       if (boltActive()) return;
       const now = performance.now();
@@ -1753,7 +1785,7 @@
       if (abilities.driverBolt) playHornSound();   // 운전자: 빵빵
     }
     function boltAvailable() {
-      if ((round >= 3 || bossMode)) return false;
+      if ((!abilities.goblin && (round >= 3 || bossMode))) return false;
       return performance.now() >= boltReadyMs;
     }
     function boltActive() {
@@ -2014,6 +2046,13 @@
       if (Math.random() < 0.01) {
         spawnSionPaper();
       }
+      // 5% 확률로 도깨비 비밀 코드 힌트 (이미 능력 있으면 안 보임)
+      if (Math.random() < 0.05 && !owned.goblin) {
+        const hint = document.getElementById('goblin-hint');
+        hint.classList.remove('hidden');
+        playZapSound();
+        setTimeout(() => hint.classList.add('hidden'), 4000);
+      }
       // 보스전 시작 시 보스가 으하하하 웃음
       if (bossMode) {
         bossLaughUntilMs = performance.now() + 2600;
@@ -2166,7 +2205,7 @@
       document.getElementById('round-num').textContent = bossMode ? '👹' : round;
       document.getElementById('progress-bar').style.width = '0%';
       const info = document.getElementById('bolt-info');
-      if ((round >= 3 || bossMode)) {
+      if ((!abilities.goblin && (round >= 3 || bossMode))) {
         info.style.display = 'none';
       } else {
         info.style.display = 'inline-block';
@@ -2180,7 +2219,7 @@
       const c = document.getElementById('controls');
       c.classList.remove('hidden');
       const bolt = document.getElementById('bolt-btn');
-      if ((round >= 3 || bossMode)) {
+      if ((!abilities.goblin && (round >= 3 || bossMode))) {
         bolt.classList.add('hidden');
       } else {
         bolt.classList.remove('hidden');
@@ -2192,7 +2231,7 @@
 
     function updateBoltButton() {
       const btn = document.getElementById('bolt-btn');
-      if ((round >= 3 || bossMode)) {
+      if ((!abilities.goblin && (round >= 3 || bossMode))) {
         btn.classList.add('hidden');
       } else {
         btn.classList.remove('hidden');
@@ -2278,7 +2317,7 @@
         bar.style.background = 'linear-gradient(90deg, #ff5722, #ffeb3b)';
       }
       const info = document.getElementById('bolt-info');
-      if ((round >= 3 || bossMode)) {
+      if ((!abilities.goblin && (round >= 3 || bossMode))) {
         info.style.display = 'none';
       } else if (boltActive()) {
         const remainSec = Math.ceil((boltActiveUntilMs - performance.now()) / 1000);
@@ -2449,10 +2488,11 @@
           playBossLaughSound();
         }
 
-        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개)
-        if (abilities.electricMaster || abilities.electricKing) {
+        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터)
+        if (abilities.electricMaster || abilities.electricKing || abilities.goblin) {
           const isKing = abilities.electricKing;
-          const interval = isKing ? 5000 : 10000;
+          const isGoblin = abilities.goblin;
+          const interval = (isKing || isGoblin) ? 5000 : 10000;
           const maxCount = isKing ? 5 : 3;
           const now2 = performance.now();
           if (now2 - electricLastShotMs >= interval) {
@@ -2473,6 +2513,8 @@
               electricBoltTargets = targets;
               electricBoltVisualUntilMs = now2 + 350;
               playZapSound();
+              // 👺 도깨비: 가시 부수면 부스터 즉시 충전!
+              if (isGoblin) boltReadyMs = now2;
             }
           }
         }
@@ -4500,6 +4542,7 @@
       if (a.unlock === 'clear5') return '4라 보스 깨면';
       if (a.unlock === 'boss') return '보스 깨면';
       if (a.unlock === 'finalboss') return '4라 보스 깨면';
+      if (a.unlock === 'code') return '🔒 비밀';
       return '';
     }
 
