@@ -697,6 +697,7 @@
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
             <p>🦣 거인 - 가시 부숨, 느림 [99999원]</p>
             <p>🌟 신의 능력 - 10초 자동 클리어 (보스X) [100000000000원] 끝판왕!</p>
+            <p>⚡ 전기지휘자 - 10초마다 가시 한묶음 부숨 [50000원]</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
@@ -937,6 +938,7 @@
       { key: 'devilKing',    icon: '👑', name: '지옥의 왕 능력',       desc: '땅의 길이가 짧아짐',    cost: 30000, unlock: 'buy'   },
       { key: 'giant',        icon: '🦣', name: '거인',                  desc: '몸 크고 느리지만 가시 부숨', cost: 99999, unlock: 'buy' },
       { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 100000000000, unlock: 'buy' },
+      { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -1435,6 +1437,9 @@
     let spikes = [];
     let blocks = [];
     let spikeShards = [];   // 부서진 가시 조각 파티클
+    let electricLastShotMs = 0;
+    let electricBoltVisualUntilMs = 0;
+    let electricBoltTargets = [];
     let volcanoEruptAtMs = 0;
     let eruptionParticles = [];   // 화산 폭발 입자
     let potions = [];
@@ -1910,6 +1915,9 @@
       jumpsLeft = abilities.pilotJump ? 2 : 1;
       birdFlyActiveUntilMs = 0;
       birdFlyReadyMs = 0;
+      electricLastShotMs = performance.now();   // 게임 시작부터 10초 후 첫 발사
+      electricBoltVisualUntilMs = 0;
+      electricBoltTargets = [];
       // 부활 횟수: 의사(1) + 천사(5) 합산
       revivesLeft = (abilities.doctorRevive ? 1 : 0) + (abilities.angelRevive5 ? 3 : 0);
       reviveUsed = false;
@@ -2437,6 +2445,31 @@
           bossDefeatedAtMs = 0;
           player.speed = 0;             // 멈춤 (보스랑 맞짱)
           playBossLaughSound();
+        }
+
+        // ⚡ 전기지휘자: 10초마다 앞쪽 가시 한 묶음(3개) 부숨
+        if (abilities.electricMaster) {
+          const now2 = performance.now();
+          if (now2 - electricLastShotMs >= 10000) {
+            electricLastShotMs = now2;
+            const idxs = [];
+            for (let i = 0; i < spikes.length && idxs.length < 3; i++) {
+              if (spikes[i].x > player.x) idxs.push(i);
+            }
+            idxs.sort((a, b) => b - a);  // 역순 splice
+            const targets = [];
+            for (const idx of idxs) {
+              const s = spikes[idx];
+              spawnSpikeBreak(s.x + s.w / 2, s.y + s.h / 2);
+              targets.push({ x: s.x + s.w / 2, y: s.y + s.h / 2 });
+              spikes.splice(idx, 1);
+            }
+            if (targets.length > 0) {
+              electricBoltTargets = targets;
+              electricBoltVisualUntilMs = now2 + 350;
+              playZapSound();
+            }
+          }
         }
 
         // 결승선 (보스 모드/미니보스가 아닐 때만)
@@ -4056,6 +4089,39 @@
       }
     }
 
+    function drawElectricBolts() {
+      const now = performance.now();
+      if (now >= electricBoltVisualUntilMs) return;
+      const k = (electricBoltVisualUntilMs - now) / 350;   // 1 → 0
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const px = player.x + PLAYER_W / 2;
+      const py = player.y + PLAYER_H / 2;
+      for (const t of electricBoltTargets) {
+        // 외곽 노란 글로우
+        ctx.strokeStyle = `rgba(255, 235, 59, ${k * 0.6})`;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(t.x, t.y);
+        ctx.stroke();
+        // 가운데 zigzag 흰 번개
+        ctx.strokeStyle = `rgba(255, 255, 255, ${k})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        const segs = 6;
+        for (let i = 1; i <= segs; i++) {
+          const r = i / segs;
+          const x = px + (t.x - px) * r + (Math.random() - 0.5) * 8;
+          const y = py + (t.y - py) * r + (Math.random() - 0.5) * 8;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     function drawSpikeShards() {
       for (const sh of spikeShards) {
         const a = Math.min(1, sh.life / 30);
@@ -4148,6 +4214,7 @@
       drawSpikeShards();
       drawProjectiles();
       drawBossBolts();
+      drawElectricBolts();
       drawPotions();
       drawWings();
       if (state === STATE.DEAD) {
