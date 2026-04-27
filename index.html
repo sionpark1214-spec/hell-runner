@@ -705,6 +705,7 @@
             <p>🏹 궁수 [700원]</p>
             <p>😇 천사 [4라 보스 깨면]</p>
             <p>👹 지옥의 왕 [1000원]</p>
+            <p>🌟 신 [100000원] 가장 비쌈!</p>
 
             <p class="help-h">━━ 💰 라운드 클리어 보상 ━━</p>
             <p>1라 = 100원</p>
@@ -958,6 +959,7 @@
       { key: 'archer', name: '궁수',   body: '#2e7d32', head: '#ffe0b2', leg: '#1b5e20', cost: 700, unlock: 'buy',    extras: 'bow' },
       { key: 'angel',  name: '천사',   body: '#bbdefb', head: '#ffffff', leg: '#bbdefb', cost: 0,   unlock: 'clear5', extras: 'wings' },
       { key: 'devil',  name: '지옥의 왕', body: '#d32f2f', head: '#ef9a9a', leg: '#b71c1c', cost: 1000, unlock: 'buy', extras: 'trident' },
+      { key: 'god',    name: '신',         body: '#ffffff', head: '#fff9c4', leg: '#ffd54f', cost: 100000, unlock: 'buy', extras: 'godly' },
     ];
     const ownedSkins = {};
     SKIN_DEFS.forEach(s => { ownedSkins[s.key] = (s.unlock === 'free'); });
@@ -3312,6 +3314,40 @@
           ctx.moveTo(x - 2 + 10 * Math.cos(-Math.PI * 0.4), y + PLAYER_H / 2 + 10 * Math.sin(-Math.PI * 0.4));
           ctx.lineTo(x - 2 + 10 * Math.cos(Math.PI * 0.4), y + PLAYER_H / 2 + 10 * Math.sin(Math.PI * 0.4));
           ctx.stroke();
+          break;
+        }
+        case 'godly': {
+          // 신 — 황금 후광 + 빛 글로우 + 흰 옷
+          if (!active) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            const pulse = 0.6 + 0.4 * Math.sin(t * 0.005);
+            // 황금빛 후광 (큰 원)
+            for (let i = 4; i > 0; i--) {
+              ctx.fillStyle = `rgba(255, 213, 79, ${0.10 * pulse})`;
+              ctx.beginPath();
+              ctx.arc(x + PLAYER_W / 2, y + PLAYER_H / 2, 12 + i * 6, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+          // 머리 위 황금 후광 링
+          ctx.strokeStyle = '#ffd54f';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#fff9c4';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.ellipse(x + PLAYER_W / 2, y - 4, 10, 3, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          // 작은 별 두 개 (양 옆)
+          ctx.fillStyle = '#ffeb3b';
+          ctx.font = 'bold 8px sans-serif';
+          ctx.textAlign = 'center';
+          const blink = Math.sin(t * 0.01) > 0;
+          if (blink) ctx.fillText('✦', x - 2, y + 6);
+          else ctx.fillText('✦', x + PLAYER_W + 2, y + 6);
+          ctx.textAlign = 'left';
           break;
         }
         case 'trident': {
