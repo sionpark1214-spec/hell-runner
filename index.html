@@ -971,6 +971,7 @@
       { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
       { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 100000, unlock: 'buy' },
       { key: 'goblin',       icon: '👺', name: '도깨비',                  desc: '5초마다 가시 3개 + 부스터 충전', cost: 0, unlock: 'code' },
+      { key: 'baby',         icon: '👶', name: '아기의 능력',             desc: '20초마다 소리쳐 가시 10개 날림', cost: 0, unlock: 'code' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -1015,6 +1016,8 @@
       '미안': { coin: 6000, msg: '🙏 미안해! 6000원!' },
       // 도깨비 능력 잠금 해제
       '도깨비방망이': { ability: 'goblin', msg: '👺 도깨비 능력 받음!' },
+      // 아기 능력 잠금 해제
+      'BABY': { ability: 'baby', msg: '👶 아기 능력 받음!' },
     };
     let usedCodes = {};
     let stats = {
@@ -2488,12 +2491,13 @@
           playBossLaughSound();
         }
 
-        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터)
-        if (abilities.electricMaster || abilities.electricKing || abilities.goblin) {
+        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터) / 👶 아기(20초/10개)
+        if (abilities.electricMaster || abilities.electricKing || abilities.goblin || abilities.baby) {
           const isKing = abilities.electricKing;
           const isGoblin = abilities.goblin;
-          const interval = (isKing || isGoblin) ? 5000 : 10000;
-          const maxCount = isKing ? 5 : 3;
+          const isBaby = abilities.baby;
+          const interval = isBaby ? 20000 : (isKing || isGoblin) ? 5000 : 10000;
+          const maxCount = isBaby ? 10 : isKing ? 5 : 3;
           const now2 = performance.now();
           if (now2 - electricLastShotMs >= interval) {
             electricLastShotMs = now2;
