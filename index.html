@@ -1366,6 +1366,158 @@
         t += n.d;
       }
     }
+    // 전기지휘자 — 짜릿릿 (zap, 기본)
+    function playElectricMasterSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const dur = 0.4;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.linearRampToValueAtTime(1200, now + dur);
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.frequency.setValueAtTime(40, now);
+      lfoGain.gain.setValueAtTime(120, now);
+      lfo.connect(lfoGain).connect(osc.frequency);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now); osc.stop(now + dur + 0.05);
+      lfo.start(now); lfo.stop(now + dur + 0.05);
+    }
+    // 전기의 왕 — 더 강한 천둥 (저주파 + zap)
+    function playElectricKingSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      // 천둥 (kick)
+      const k = ctx.createOscillator();
+      const kg = ctx.createGain();
+      k.type = 'sine';
+      k.frequency.setValueAtTime(80, now);
+      k.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+      kg.gain.setValueAtTime(0.0001, now);
+      kg.gain.linearRampToValueAtTime(0.5, now + 0.005);
+      kg.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+      k.connect(kg).connect(ctx.destination);
+      k.start(now); k.stop(now + 0.45);
+      // 짜릿 sweep
+      const o = ctx.createOscillator();
+      const og = ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(180, now);
+      o.frequency.linearRampToValueAtTime(2000, now + 0.5);
+      const lfo = ctx.createOscillator();
+      const lfg = ctx.createGain();
+      lfo.frequency.setValueAtTime(60, now);
+      lfg.gain.setValueAtTime(180, now);
+      lfo.connect(lfg).connect(o.frequency);
+      og.gain.setValueAtTime(0.0001, now);
+      og.gain.linearRampToValueAtTime(0.22, now + 0.02);
+      og.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+      o.connect(og).connect(ctx.destination);
+      o.start(now); o.stop(now + 0.6);
+      lfo.start(now); lfo.stop(now + 0.6);
+    }
+    // 도깨비 — 우스꽝스러운 마법 (낮은 wobble + 위로 sweep)
+    function playGoblinSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const dur = 0.5;
+      // 메인 톤 (펄스 wobble)
+      const o = ctx.createOscillator();
+      const og = ctx.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(180, now);
+      o.frequency.linearRampToValueAtTime(420, now + 0.15);
+      o.frequency.linearRampToValueAtTime(280, now + 0.3);
+      o.frequency.linearRampToValueAtTime(520, now + 0.5);
+      og.gain.setValueAtTime(0.0001, now);
+      og.gain.linearRampToValueAtTime(0.16, now + 0.01);
+      og.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      o.connect(og).connect(ctx.destination);
+      o.start(now); o.stop(now + dur + 0.05);
+      // 사뭇 마법 같은 고주파 반짝
+      const o2 = ctx.createOscillator();
+      const og2 = ctx.createGain();
+      o2.type = 'triangle';
+      o2.frequency.setValueAtTime(1200, now + 0.1);
+      o2.frequency.linearRampToValueAtTime(1800, now + 0.3);
+      og2.gain.setValueAtTime(0.0001, now + 0.1);
+      og2.gain.linearRampToValueAtTime(0.10, now + 0.12);
+      og2.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      o2.connect(og2).connect(ctx.destination);
+      o2.start(now + 0.1); o2.stop(now + 0.4);
+    }
+    // 아기 — 초음파 울음 (고주파 sweep, 떨림)
+    function playBabySound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const dur = 0.7;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      // 으앙~ 울음 sweep (위로 → 아래로)
+      o.frequency.setValueAtTime(800, now);
+      o.frequency.linearRampToValueAtTime(2400, now + 0.25);
+      o.frequency.linearRampToValueAtTime(1400, now + dur);
+      // 떨림 (vibrato)
+      const lfo = ctx.createOscillator();
+      const lfg = ctx.createGain();
+      lfo.frequency.setValueAtTime(15, now);
+      lfg.gain.setValueAtTime(80, now);
+      lfo.connect(lfg).connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.18, now + 0.03);
+      g.gain.linearRampToValueAtTime(0.12, now + dur - 0.1);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(now); o.stop(now + dur + 0.05);
+      lfo.start(now); lfo.stop(now + dur + 0.05);
+    }
+    // 거인 — 큰 쿵 (저주파 kick + 으르렁)
+    function playGiantSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      // 묵직한 kick
+      const k = ctx.createOscillator();
+      const kg = ctx.createGain();
+      k.type = 'sine';
+      k.frequency.setValueAtTime(100, now);
+      k.frequency.exponentialRampToValueAtTime(28, now + 0.4);
+      kg.gain.setValueAtTime(0.0001, now);
+      kg.gain.linearRampToValueAtTime(0.65, now + 0.005);
+      kg.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+      k.connect(kg).connect(ctx.destination);
+      k.start(now); k.stop(now + 0.55);
+      // 으르렁 노이즈
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / data.length);
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'lowpass';
+      nf.frequency.setValueAtTime(400, now);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.001, now);
+      ng.gain.linearRampToValueAtTime(0.25, now + 0.005);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      noise.connect(nf).connect(ng).connect(ctx.destination);
+      noise.start(now); noise.stop(now + 0.45);
+    }
     function playFanfareSound() {
       const ctx = getAudioCtx();
       if (!ctx) return;
@@ -1477,6 +1629,7 @@
     let electricLastShotMs = 0;
     let electricBoltVisualUntilMs = 0;
     let electricBoltTargets = [];
+    let electricBoltType = 'zap';   // 'zap'/'king'/'goblin'/'baby'
     let volcanoEruptAtMs = 0;
     let eruptionParticles = [];   // 화산 폭발 입자
     let potions = [];
@@ -2437,6 +2590,7 @@
                 // 거인은 가시 부숨!
                 spawnSpikeBreak(s.x + s.w / 2, s.y + s.h / 2);
                 spikes.splice(i, 1);
+                playGiantSound();
                 continue;
               }
               die();
@@ -2515,8 +2669,12 @@
             }
             if (targets.length > 0) {
               electricBoltTargets = targets;
-              electricBoltVisualUntilMs = now2 + 350;
-              playZapSound();
+              electricBoltVisualUntilMs = now2 + (isBaby ? 600 : 350);
+              electricBoltType = isBaby ? 'baby' : isGoblin ? 'goblin' : isKing ? 'king' : 'zap';
+              if (isBaby)        playBabySound();
+              else if (isGoblin) playGoblinSound();
+              else if (isKing)   playElectricKingSound();
+              else               playElectricMasterSound();
               // 👺 도깨비: 가시 부수면 부스터 즉시 충전!
               if (isGoblin) boltReadyMs = now2;
             }
@@ -4143,11 +4301,34 @@
     function drawElectricBolts() {
       const now = performance.now();
       if (now >= electricBoltVisualUntilMs) return;
-      const k = (electricBoltVisualUntilMs - now) / 350;   // 1 → 0
+      const totalDur = electricBoltType === 'baby' ? 600 : 350;
+      const k = (electricBoltVisualUntilMs - now) / totalDur;   // 1 → 0
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       const px = player.x + PLAYER_W / 2;
       const py = player.y + PLAYER_H / 2;
+
+      // === 아기: 초음파 동심원 파동 ===
+      if (electricBoltType === 'baby') {
+        for (let r = 0; r < 4; r++) {
+          const radius = (1 - k) * 200 + r * 18;
+          const a = k * (1 - r * 0.18);
+          ctx.strokeStyle = `rgba(255, 192, 203, ${a * 0.85})`;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(px, py, radius, -Math.PI / 2.5, Math.PI / 2.5);
+          ctx.stroke();
+          // 안쪽 흰색 강조
+          ctx.strokeStyle = `rgba(255, 255, 255, ${a * 0.7})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(px, py, radius, -Math.PI / 3, Math.PI / 3);
+          ctx.stroke();
+        }
+        ctx.restore();
+        return;
+      }
+
       for (const t of electricBoltTargets) {
         // 외곽 노란 글로우
         ctx.strokeStyle = `rgba(255, 235, 59, ${k * 0.6})`;
