@@ -695,9 +695,10 @@
             <p>🧙 마법사 - 가시 작아짐 [10000원]</p>
             <p>😇 천사 - 3번 부활 [4라 보스 깨면]</p>
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
-            <p>🦣 거인 - 가시 부숨, 느림 [99999원]</p>
-            <p>🌟 신의 능력 - 10초 자동 클리어 (보스X) [100000000000원] 끝판왕!</p>
-            <p>⚡ 전기지휘자 - 10초마다 가시 한묶음 부숨 [50000원]</p>
+            <p>🦣 거인 - 가시 부숨, 느림 [150000원]</p>
+            <p>🌟 신의 능력 - 10초 자동 클리어 (보스X) [500000원]</p>
+            <p>⚡ 전기지휘자 - 10초마다 가시 3개 부숨 [50000원]</p>
+            <p>👑 전기의 왕 - 5초마다 가시 5개 부숨 [60000원]</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
@@ -936,9 +937,10 @@
       { key: 'wizardSpike',  icon: '🧙', name: '마법사의 능력',         desc: '가시 반으로 작아짐',    cost: 10000, unlock: 'buy'    },
       { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 3번',              cost: 0,    unlock: 'clear5'  },
       { key: 'devilKing',    icon: '👑', name: '지옥의 왕 능력',       desc: '땅의 길이가 짧아짐',    cost: 30000, unlock: 'buy'   },
-      { key: 'giant',        icon: '🦣', name: '거인',                  desc: '몸 크고 느리지만 가시 부숨', cost: 99999, unlock: 'buy' },
-      { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 100000000000, unlock: 'buy' },
+      { key: 'giant',        icon: '🦣', name: '거인',                  desc: '몸 크고 느리지만 가시 부숨', cost: 150000, unlock: 'buy' },
+      { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 500000, unlock: 'buy' },
       { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
+      { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 60000, unlock: 'buy' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -2447,13 +2449,16 @@
           playBossLaughSound();
         }
 
-        // ⚡ 전기지휘자: 10초마다 앞쪽 가시 한 묶음(3개) 부숨
-        if (abilities.electricMaster) {
+        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개)
+        if (abilities.electricMaster || abilities.electricKing) {
+          const isKing = abilities.electricKing;
+          const interval = isKing ? 5000 : 10000;
+          const maxCount = isKing ? 5 : 3;
           const now2 = performance.now();
-          if (now2 - electricLastShotMs >= 10000) {
+          if (now2 - electricLastShotMs >= interval) {
             electricLastShotMs = now2;
             const idxs = [];
-            for (let i = 0; i < spikes.length && idxs.length < 3; i++) {
+            for (let i = 0; i < spikes.length && idxs.length < maxCount; i++) {
               if (spikes[i].x > player.x) idxs.push(i);
             }
             idxs.sort((a, b) => b - a);  // 역순 splice
