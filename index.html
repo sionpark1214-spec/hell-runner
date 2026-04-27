@@ -696,7 +696,7 @@
             <p>😇 천사 - 3번 부활 [4라 보스 깨면]</p>
             <p>👑 지옥의 왕 - 땅 짧아짐 [30000원] 가장 비쌈!</p>
             <p>🦣 거인 - 가시 부숨, 느림 [99999원]</p>
-            <p>🌟 신의 능력 - 10초 자동 클리어 (보스X) [50000원]</p>
+            <p>🌟 신의 능력 - 10초 자동 클리어 (보스X) [100000000000원] 끝판왕!</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
@@ -705,7 +705,6 @@
             <p>🏹 궁수 [700원]</p>
             <p>😇 천사 [4라 보스 깨면]</p>
             <p>👹 지옥의 왕 [1000원]</p>
-            <p>🌟 신 [100000원] 가장 비쌈!</p>
 
             <p class="help-h">━━ 💰 라운드 클리어 보상 ━━</p>
             <p>1라 = 100원</p>
@@ -937,7 +936,7 @@
       { key: 'angelRevive5', icon: '😇', name: '천사의 능력',           desc: '부활 3번',              cost: 0,    unlock: 'clear5'  },
       { key: 'devilKing',    icon: '👑', name: '지옥의 왕 능력',       desc: '땅의 길이가 짧아짐',    cost: 30000, unlock: 'buy'   },
       { key: 'giant',        icon: '🦣', name: '거인',                  desc: '몸 크고 느리지만 가시 부숨', cost: 99999, unlock: 'buy' },
-      { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 50000, unlock: 'buy' },
+      { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 100000000000, unlock: 'buy' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -959,7 +958,6 @@
       { key: 'archer', name: '궁수',   body: '#2e7d32', head: '#ffe0b2', leg: '#1b5e20', cost: 700, unlock: 'buy',    extras: 'bow' },
       { key: 'angel',  name: '천사',   body: '#bbdefb', head: '#ffffff', leg: '#bbdefb', cost: 0,   unlock: 'clear5', extras: 'wings' },
       { key: 'devil',  name: '지옥의 왕', body: '#d32f2f', head: '#ef9a9a', leg: '#b71c1c', cost: 1000, unlock: 'buy', extras: 'trident' },
-      { key: 'god',    name: '신',         body: '#ffffff', head: '#fff9c4', leg: '#ffd54f', cost: 100000, unlock: 'buy', extras: 'godly' },
     ];
     const ownedSkins = {};
     SKIN_DEFS.forEach(s => { ownedSkins[s.key] = (s.unlock === 'free'); });
