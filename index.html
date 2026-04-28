@@ -143,6 +143,51 @@
     .screen button.skin-btn:active {
       box-shadow: 0 2px 0 #003f06;
     }
+    .screen button.spin-btn {
+      background: linear-gradient(180deg, #e91e63, #880e4f);
+      border-color: #f8bbd0;
+      box-shadow: 0 4px 0 #560027, 0 0 14px rgba(244, 143, 177, 0.6);
+      color: #fff;
+      font-size: 14px;
+      padding: 8px 14px;
+    }
+    .screen button.spin-btn:active { box-shadow: 0 2px 0 #560027; }
+    .spin-cooldown {
+      font-size: 12px;
+      color: #ffab91;
+      margin-bottom: 8px;
+    }
+    .spin-box {
+      width: 220px;
+      height: 60px;
+      margin: 8px auto 12px;
+      background: rgba(255, 235, 59, 0.15);
+      border: 3px solid #ffeb3b;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: #ffeb3b;
+      white-space: nowrap;
+      box-shadow: 0 0 18px rgba(255, 235, 59, 0.5);
+    }
+    .spin-box.spinning {
+      animation: spinShake 0.05s linear infinite;
+    }
+    @keyframes spinShake {
+      0% { transform: translateY(-2px) scale(1.02); }
+      100% { transform: translateY(2px) scale(0.98); }
+    }
+    .spin-result {
+      min-height: 22px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #ffeb3b;
+      margin-bottom: 12px;
+      white-space: nowrap;
+    }
     .screen button.code-btn {
       background: linear-gradient(180deg, #ffeb3b, #f57f17);
       border-color: #fff59d;
@@ -677,6 +722,7 @@
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
               <button id="help-btn" class="help-btn">❓ 도움말</button>
+              <button id="spin-btn" class="spin-btn">🎰 스핀</button>
               <button id="code-btn" class="code-btn">🎁 코드</button>
             </div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
@@ -749,6 +795,19 @@
           <h1>🏆 내 기록 🏆</h1>
           <div class="rank-list" id="rank-list"></div>
           <button id="rank-close">닫기</button>
+        </div>
+
+        <!-- 스핀 화면 -->
+        <div id="spin-screen" class="screen hidden">
+          <h1>🎰 행운의 스핀 🎰</h1>
+          <div class="coin-bar">💰 <span id="spin-coin">0</span> 원</div>
+          <div id="spin-cooldown" class="spin-cooldown">⏰ 다음 스핀까지 10시간</div>
+          <div class="spin-box" id="spin-box">🎰 스핀!</div>
+          <div id="spin-result" class="spin-result"></div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button id="spin-do">🎰 돌리기!</button>
+            <button id="spin-close">닫기</button>
+          </div>
         </div>
 
         <!-- 코드 입력 화면 -->
@@ -1017,6 +1076,26 @@
       'BABY아기': { ability: 'baby', msg: '👶 아기 능력 받음!' },
     };
     let usedCodes = {};
+    let lastSpinMs = 0;        // 마지막 일반 스핀 (10시간 쿨다운)
+    let freeSpins = 0;         // 보너스로 쌓인 스핀 횟수
+    const SPIN_COOLDOWN_MS = 10 * 3600 * 1000;
+    const SPIN_REWARDS = [
+      { weight: 0.1, type: 'coin', amount: 100000000, label: '💰 1억! 대박!' },
+      { weight: 0.9, type: 'coin', amount: 100,       label: '💰 100원' },
+      { weight: 10,  type: 'coin', amount: 500,       label: '💰 500원' },
+      { weight: 11,  type: 'fail',                    label: '💀 꽝!' },
+      { weight: 20,  type: 'spin', amount: 2,         label: '🎰 스핀 2번 더!' },
+      { weight: 58,  type: 'coin', amount: 100,       label: '💰 100원' },
+    ];
+    function pickSpinReward() {
+      const total = SPIN_REWARDS.reduce((a, b) => a + b.weight, 0);
+      let r = Math.random() * total;
+      for (const rw of SPIN_REWARDS) {
+        r -= rw.weight;
+        if (r <= 0) return rw;
+      }
+      return SPIN_REWARDS[0];
+    }
     let stats = {
       records: []      // [{score, label, time}] 점수 내림차순 정렬, 최대 100개
     };
@@ -1582,7 +1661,7 @@
     } catch (e) {}
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1612,6 +1691,8 @@
         if (data.currentSkin && ownedSkins[data.currentSkin]) currentSkin = data.currentSkin;
         if (data.usedCodes && typeof data.usedCodes === 'object') usedCodes = data.usedCodes;
         if (typeof data.cheerEnabled === 'boolean') cheerEnabled = data.cheerEnabled;
+        if (typeof data.lastSpinMs === 'number') lastSpinMs = data.lastSpinMs;
+        if (typeof data.freeSpins === 'number') freeSpins = data.freeSpins;
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
@@ -4608,6 +4689,79 @@
           '<span style="font-size:11px;color:#ffab91;">' + r.label + '</span>' +
           '<span class="rank-best">' + r.score + '점</span>');
       });
+    }
+
+    // 스핀 화면
+    document.getElementById('spin-btn').addEventListener('click', () => {
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('spin-screen').classList.remove('hidden');
+      renderSpin();
+    });
+    document.getElementById('spin-close').addEventListener('click', () => {
+      document.getElementById('spin-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+    });
+    document.getElementById('spin-do').addEventListener('click', doSpin);
+
+    function spinAvailable() {
+      return freeSpins > 0 || (Date.now() - lastSpinMs >= SPIN_COOLDOWN_MS);
+    }
+    function renderSpin() {
+      document.getElementById('spin-coin').textContent = coins;
+      const cooldown = document.getElementById('spin-cooldown');
+      const btn = document.getElementById('spin-do');
+      const box = document.getElementById('spin-box');
+      const result = document.getElementById('spin-result');
+      result.textContent = '';
+      box.textContent = '🎰 스핀!';
+      box.classList.remove('spinning');
+      if (freeSpins > 0) {
+        cooldown.textContent = '🎁 보너스 스핀: ' + freeSpins + '번';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      } else {
+        const remain = SPIN_COOLDOWN_MS - (Date.now() - lastSpinMs);
+        if (remain <= 0) {
+          cooldown.textContent = '✨ 스핀 사용 가능!';
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        } else {
+          const h = Math.floor(remain / 3600000);
+          const m = Math.floor((remain % 3600000) / 60000);
+          cooldown.textContent = '⏰ 다음 스핀: ' + h + '시간 ' + m + '분';
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+        }
+      }
+    }
+    function doSpin() {
+      if (!spinAvailable()) return;
+      // 스핀 1회 차감
+      if (freeSpins > 0) freeSpins -= 1;
+      else lastSpinMs = Date.now();
+      const reward = pickSpinReward();
+      const box = document.getElementById('spin-box');
+      const result = document.getElementById('spin-result');
+      const btn = document.getElementById('spin-do');
+      btn.disabled = true; btn.style.opacity = '0.5';
+      box.classList.add('spinning');
+      // 빠르게 글자 변경
+      const tick = setInterval(() => {
+        const r = SPIN_REWARDS[Math.floor(Math.random() * SPIN_REWARDS.length)];
+        box.textContent = r.label;
+      }, 60);
+      setTimeout(() => {
+        clearInterval(tick);
+        box.classList.remove('spinning');
+        box.textContent = reward.label;
+        result.textContent = '✨ ' + reward.label;
+        // 보상 지급
+        if (reward.type === 'coin') coins += reward.amount;
+        else if (reward.type === 'spin') freeSpins += reward.amount;
+        if (reward.type !== 'fail') playFanfareSound();
+        saveProgress();
+        setTimeout(renderSpin, 1500);
+      }, 1800);
     }
 
     // 코드 화면
