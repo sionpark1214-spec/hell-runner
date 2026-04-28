@@ -970,7 +970,6 @@
       { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 500000, unlock: 'buy' },
       { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
       { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 100000, unlock: 'buy' },
-      { key: 'goblin',       icon: '👺', name: '도깨비',                  desc: '5초마다 가시 3개 + 부스터 충전', cost: 0, unlock: 'code' },
       { key: 'baby',         icon: '👶', name: '아기의 능력',             desc: '20초마다 소리쳐 가시 10개 날림', cost: 0, unlock: 'code' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
@@ -1014,8 +1013,6 @@
       '매력있어다이노소어크래샌도': { master: true, bigcoin: true, msg: '🌟 매력있어다이노소어크래샌도! 다 받음 + 엄청난 돈!' },
       // 사과 코드
       '미안': { coin: 6000, msg: '🙏 미안해! 6000원!' },
-      // 도깨비 능력 잠금 해제
-      '도깨비방망이': { ability: 'goblin', msg: '👺 도깨비 능력 받음!' },
       // 아기 능력 잠금 해제
       'BABY아기': { ability: 'baby', msg: '👶 아기 능력 받음!' },
     };
@@ -2201,13 +2198,6 @@
       // 1% 확률로 'sion' 종이가 배경에 등장
       if (Math.random() < 0.01) {
         spawnSionPaper();
-      }
-      // 5% 확률로 도깨비 비밀 코드 힌트 (이미 능력 있으면 안 보임)
-      if (Math.random() < 0.05 && !owned.goblin) {
-        const hint = document.getElementById('goblin-hint');
-        hint.classList.remove('hidden');
-        playZapSound();
-        setTimeout(() => hint.classList.add('hidden'), 4000);
       }
       // 보스전 시작 시 보스가 으하하하 웃음
       if (bossMode) {
