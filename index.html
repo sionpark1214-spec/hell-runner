@@ -780,6 +780,7 @@
             <p>🏹 궁수 [700원]</p>
             <p>😇 천사 [4라 보스 깨면]</p>
             <p>👹 지옥의 왕 [1000원]</p>
+            <p>🦑 오징어 [200원] 팔딱팔딱!</p>
 
             <p class="help-h">━━ 💰 라운드 클리어 보상 ━━</p>
             <p>1라 = 100원</p>
@@ -1053,6 +1054,7 @@
       { key: 'archer', name: '궁수',   body: '#2e7d32', head: '#ffe0b2', leg: '#1b5e20', cost: 700, unlock: 'buy',    extras: 'bow' },
       { key: 'angel',  name: '천사',   body: '#bbdefb', head: '#ffffff', leg: '#bbdefb', cost: 0,   unlock: 'clear5', extras: 'wings' },
       { key: 'devil',  name: '지옥의 왕', body: '#d32f2f', head: '#ef9a9a', leg: '#b71c1c', cost: 1000, unlock: 'buy', extras: 'trident' },
+      { key: 'squid',  name: '오징어',     body: '#ce93d8', head: '#f8bbd0', leg: '#ba68c8', cost: 200, unlock: 'buy', extras: 'squid' },
     ];
     const ownedSkins = {};
     SKIN_DEFS.forEach(s => { ownedSkins[s.key] = (s.unlock === 'free'); });
@@ -3663,6 +3665,54 @@
           ctx.moveTo(x - 2 + 10 * Math.cos(-Math.PI * 0.4), y + PLAYER_H / 2 + 10 * Math.sin(-Math.PI * 0.4));
           ctx.lineTo(x - 2 + 10 * Math.cos(Math.PI * 0.4), y + PLAYER_H / 2 + 10 * Math.sin(Math.PI * 0.4));
           ctx.stroke();
+          break;
+        }
+        case 'squid': {
+          // 오징어 — 머리 위 삼각 모자 + 양쪽 지느러미 + 팔딱거림 (위아래 흔들림은 사용자가 못 보지만 다리 흔들림)
+          const wob = Math.sin(t * 0.015) * 2;
+          // 머리 위 오징어 모자 (삼각 + 둥근 끝)
+          ctx.fillStyle = '#9c27b0';
+          ctx.beginPath();
+          ctx.moveTo(x + PLAYER_W / 2 - 8, y - 1);
+          ctx.lineTo(x + PLAYER_W / 2 + 8, y - 1);
+          ctx.lineTo(x + PLAYER_W / 2 + 4, y - 10 - wob);
+          ctx.lineTo(x + PLAYER_W / 2, y - 13 - wob);
+          ctx.lineTo(x + PLAYER_W / 2 - 4, y - 10 - wob);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#4a0072';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // 양쪽 지느러미 (귀처럼)
+          ctx.fillStyle = '#ce93d8';
+          ctx.beginPath();
+          ctx.ellipse(x + 1, y + 4 + wob, 3, 5, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(x + PLAYER_W - 1, y + 4 + wob, 3, 5, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+          // 다리 여러 개 (팔딱거림)
+          ctx.strokeStyle = '#9c27b0';
+          ctx.lineWidth = 2;
+          for (let i = -2; i <= 2; i++) {
+            const lx = x + PLAYER_W / 2 + i * 3;
+            const off = Math.sin(t * 0.03 + i) * 3;
+            ctx.beginPath();
+            ctx.moveTo(lx, y + PLAYER_H - 2);
+            ctx.quadraticCurveTo(lx + off, y + PLAYER_H + 4, lx + off * 1.5, y + PLAYER_H + 8);
+            ctx.stroke();
+          }
+          // 동그란 눈
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(x + 8, y + 6, 2.5, 0, Math.PI * 2);
+          ctx.arc(x + PLAYER_W - 8, y + 6, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.arc(x + 8, y + 6, 1.2, 0, Math.PI * 2);
+          ctx.arc(x + PLAYER_W - 8, y + 6, 1.2, 0, Math.PI * 2);
+          ctx.fill();
           break;
         }
         case 'godly': {
