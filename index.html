@@ -1088,10 +1088,10 @@
     const SPIN_REWARDS = [
       { weight: 0.1, type: 'coin', amount: 10000, label: '💰 10000원! 대박!' },
       { weight: 0.9, type: 'coin', amount: 1000,      label: '💰 1000원' },
-      { weight: 10,  type: 'coin', amount: 500,       label: '💰 500원' },
-      { weight: 11,  type: 'fail',                    label: '💀 꽝!' },
-      { weight: 20,  type: 'spin', amount: 2,         label: '🎰 스핀 2번 더!' },
-      { weight: 58,  type: 'coin', amount: 100,       label: '💰 100원' },
+      { weight: 6,   type: 'coin', amount: 500,       label: '💰 500원' },
+      { weight: 7,   type: 'fail',                    label: '💀 꽝!' },
+      { weight: 16,  type: 'spin', amount: 2,         label: '🎰 스핀 2번 더!' },
+      { weight: 70,  type: 'coin', amount: 100,       label: '💰 100원' },
     ];
     function pickSpinReward() {
       const total = SPIN_REWARDS.reduce((a, b) => a + b.weight, 0);
