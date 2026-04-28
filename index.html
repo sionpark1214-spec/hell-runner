@@ -772,6 +772,7 @@
             <p>⚡ 전기지휘자 - 10초마다 가시 3개 부숨 [50000원]</p>
             <p>👑 전기의 왕 - 5초마다 가시 5개 부숨 [100000원]</p>
             <p>🦑 오징어 - 10초마다 먹물로 가시 3개 [30000원]</p>
+            <p>🤱 엄마 - 10초마다 등짝스매싱! 가시 2개 [9999원]</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
@@ -1033,6 +1034,7 @@
       { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 100000, unlock: 'buy' },
       { key: 'squid',        icon: '🦑', name: '오징어',                  desc: '10초마다 먹물로 가시 3개 없앰', cost: 30000, unlock: 'buy' },
       { key: 'baby',         icon: '👶', name: '아기의 능력',             desc: '20초마다 소리쳐 가시 10개 날림', cost: 0, unlock: 'code' },
+      { key: 'mom',          icon: '🤱', name: '엄마의 능력',             desc: '10초마다 등짝스매싱! 가시 2개', cost: 9999, unlock: 'buy' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
     const owned = {};                // 보유 여부 (산/얻은 능력)
@@ -1598,6 +1600,40 @@
       ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
       noise.connect(nf).connect(ng).connect(ctx.destination);
       noise.start(now); noise.stop(now + 0.32);
+    }
+    // 엄마 — 짝! 등짝스매싱 (찰싹 슬랩)
+    function playMomSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      // 짧은 노이즈 슬랩
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / data.length);
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'bandpass';
+      nf.frequency.setValueAtTime(2500, now);
+      nf.Q.setValueAtTime(1, now);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, now);
+      ng.gain.linearRampToValueAtTime(0.4, now + 0.005);
+      ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      noise.connect(nf).connect(ng).connect(ctx.destination);
+      noise.start(now); noise.stop(now + 0.13);
+      // 짧은 톤 (강조)
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(800, now);
+      o.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.18, now + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+      o.connect(g).connect(ctx.destination);
+      o.start(now); o.stop(now + 0.12);
     }
     // 거인 — 큰 쿵 (저주파 kick + 으르렁)
     function playGiantSound() {
@@ -2754,14 +2790,15 @@
           playBossLaughSound();
         }
 
-        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터) / 👶 아기(20초/10개) / 🦑 오징어(10초/3개 먹물)
-        if (abilities.electricMaster || abilities.electricKing || abilities.goblin || abilities.baby || abilities.squid) {
+        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터) / 👶 아기(20초/10개) / 🦑 오징어(10초/3개 먹물) / 🤱 엄마(10초/2개 등짝)
+        if (abilities.electricMaster || abilities.electricKing || abilities.goblin || abilities.baby || abilities.squid || abilities.mom) {
           const isKing = abilities.electricKing;
           const isGoblin = abilities.goblin;
           const isBaby = abilities.baby;
           const isSquid = abilities.squid;
+          const isMom = abilities.mom;
           const interval = isBaby ? 20000 : (isKing || isGoblin) ? 5000 : 10000;
-          const maxCount = isBaby ? 10 : isKing ? 5 : 3;
+          const maxCount = isBaby ? 10 : isKing ? 5 : isMom ? 2 : 3;
           const now2 = performance.now();
           if (now2 - electricLastShotMs >= interval) {
             electricLastShotMs = now2;
@@ -2779,10 +2816,11 @@
             }
             if (targets.length > 0) {
               electricBoltTargets = targets;
-              electricBoltVisualUntilMs = now2 + (isBaby ? 600 : isSquid ? 500 : 350);
-              electricBoltType = isBaby ? 'baby' : isSquid ? 'squid' : isGoblin ? 'goblin' : isKing ? 'king' : 'zap';
+              electricBoltVisualUntilMs = now2 + (isBaby ? 600 : isSquid ? 500 : isMom ? 250 : 350);
+              electricBoltType = isBaby ? 'baby' : isSquid ? 'squid' : isMom ? 'mom' : isGoblin ? 'goblin' : isKing ? 'king' : 'zap';
               if (isBaby)        playBabySound();
               else if (isSquid)  playSquidSound();
+              else if (isMom)    playMomSound();
               else if (isGoblin) playGoblinSound();
               else if (isKing)   playElectricKingSound();
               else               playElectricMasterSound();
@@ -4460,12 +4498,45 @@
     function drawElectricBolts() {
       const now = performance.now();
       if (now >= electricBoltVisualUntilMs) return;
-      const totalDur = electricBoltType === 'baby' ? 600 : electricBoltType === 'squid' ? 500 : 350;
+      const totalDur = electricBoltType === 'baby' ? 600 : electricBoltType === 'squid' ? 500 : electricBoltType === 'mom' ? 250 : 350;
       const k = (electricBoltVisualUntilMs - now) / totalDur;   // 1 → 0
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       const px = player.x + PLAYER_W / 2;
       const py = player.y + PLAYER_H / 2;
+
+      // === 엄마: 등짝스매싱 — 가시 위에 빨간 손바닥 자국 + "짝!" ===
+      if (electricBoltType === 'mom') {
+        for (const t of electricBoltTargets) {
+          // 빨간 손바닥 자국 (5각 별 비슷)
+          ctx.save();
+          ctx.translate(t.x, t.y);
+          ctx.scale(1 + (1 - k) * 0.5, 1 + (1 - k) * 0.5);
+          ctx.fillStyle = `rgba(244, 67, 54, ${k * 0.85})`;
+          ctx.beginPath();
+          // 손바닥
+          ctx.arc(0, 4, 8, 0, Math.PI * 2);
+          ctx.fill();
+          // 손가락 5개
+          for (let i = -2; i <= 2; i++) {
+            ctx.beginPath();
+            ctx.ellipse(i * 3, -4, 1.8, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+          // "짝!" 글자
+          ctx.fillStyle = `rgba(255, 235, 59, ${k})`;
+          ctx.strokeStyle = `rgba(0, 0, 0, ${k})`;
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 18px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.strokeText('짝!', t.x, t.y - 18);
+          ctx.fillText('짝!', t.x, t.y - 18);
+          ctx.textAlign = 'left';
+        }
+        ctx.restore();
+        return;
+      }
 
       // === 오징어: 검은 먹물 splat (불규칙 검은 얼룩) ===
       if (electricBoltType === 'squid') {
