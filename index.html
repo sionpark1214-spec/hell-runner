@@ -771,6 +771,7 @@
             <p>🌟 신의 능력 - 10초 자동 클리어 (보스X) [500000원]</p>
             <p>⚡ 전기지휘자 - 10초마다 가시 3개 부숨 [50000원]</p>
             <p>👑 전기의 왕 - 5초마다 가시 5개 부숨 [100000원]</p>
+            <p>🦑 오징어 - 10초마다 먹물로 가시 3개 [40000원]</p>
 
             <p class="help-h">━━ 🧍 캐릭터 ━━</p>
             <p>🐹 햄스터 [공짜]</p>
@@ -1029,6 +1030,7 @@
       { key: 'godMode',      icon: '🌟', name: '신의 능력',             desc: '10초 만에 자동 클리어 (보스 X)', cost: 500000, unlock: 'buy' },
       { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
       { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 100000, unlock: 'buy' },
+      { key: 'squid',        icon: '🦑', name: '오징어',                  desc: '10초마다 먹물로 가시 3개 없앰', cost: 40000, unlock: 'buy' },
       { key: 'baby',         icon: '👶', name: '아기의 능력',             desc: '20초마다 소리쳐 가시 10개 날림', cost: 0, unlock: 'code' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
@@ -1560,6 +1562,40 @@
       o.connect(g).connect(ctx.destination);
       o.start(now); o.stop(now + dur + 0.05);
       lfo.start(now); lfo.stop(now + dur + 0.05);
+    }
+    // 오징어 — 풍덩! (먹물 발사, splat sound)
+    function playSquidSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      // 저주파 풍덩
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(220, now);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.3);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.linearRampToValueAtTime(0.25, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      o.connect(g).connect(ctx.destination);
+      o.start(now); o.stop(now + 0.4);
+      // 노이즈 splat
+      const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.25), ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let j = 0; j < data.length; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / data.length);
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'lowpass';
+      nf.frequency.setValueAtTime(800, now);
+      nf.frequency.exponentialRampToValueAtTime(200, now + 0.25);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, now);
+      ng.gain.linearRampToValueAtTime(0.18, now + 0.01);
+      ng.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+      noise.connect(nf).connect(ng).connect(ctx.destination);
+      noise.start(now); noise.stop(now + 0.32);
     }
     // 거인 — 큰 쿵 (저주파 kick + 으르렁)
     function playGiantSound() {
@@ -2716,11 +2752,12 @@
           playBossLaughSound();
         }
 
-        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터) / 👶 아기(20초/10개)
-        if (abilities.electricMaster || abilities.electricKing || abilities.goblin || abilities.baby) {
+        // ⚡ 전기지휘자(10초/3개) / 👑 전기의 왕(5초/5개) / 👺 도깨비(5초/3개+부스터) / 👶 아기(20초/10개) / 🦑 오징어(10초/3개 먹물)
+        if (abilities.electricMaster || abilities.electricKing || abilities.goblin || abilities.baby || abilities.squid) {
           const isKing = abilities.electricKing;
           const isGoblin = abilities.goblin;
           const isBaby = abilities.baby;
+          const isSquid = abilities.squid;
           const interval = isBaby ? 20000 : (isKing || isGoblin) ? 5000 : 10000;
           const maxCount = isBaby ? 10 : isKing ? 5 : 3;
           const now2 = performance.now();
@@ -2740,9 +2777,10 @@
             }
             if (targets.length > 0) {
               electricBoltTargets = targets;
-              electricBoltVisualUntilMs = now2 + (isBaby ? 600 : 350);
-              electricBoltType = isBaby ? 'baby' : isGoblin ? 'goblin' : isKing ? 'king' : 'zap';
+              electricBoltVisualUntilMs = now2 + (isBaby ? 600 : isSquid ? 500 : 350);
+              electricBoltType = isBaby ? 'baby' : isSquid ? 'squid' : isGoblin ? 'goblin' : isKing ? 'king' : 'zap';
               if (isBaby)        playBabySound();
+              else if (isSquid)  playSquidSound();
               else if (isGoblin) playGoblinSound();
               else if (isKing)   playElectricKingSound();
               else               playElectricMasterSound();
@@ -4372,12 +4410,52 @@
     function drawElectricBolts() {
       const now = performance.now();
       if (now >= electricBoltVisualUntilMs) return;
-      const totalDur = electricBoltType === 'baby' ? 600 : 350;
+      const totalDur = electricBoltType === 'baby' ? 600 : electricBoltType === 'squid' ? 500 : 350;
       const k = (electricBoltVisualUntilMs - now) / totalDur;   // 1 → 0
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       const px = player.x + PLAYER_W / 2;
       const py = player.y + PLAYER_H / 2;
+
+      // === 오징어: 검은 먹물 splat (불규칙 검은 얼룩) ===
+      if (electricBoltType === 'squid') {
+        for (const t of electricBoltTargets) {
+          // player → target 검은 먹물 줄
+          ctx.strokeStyle = `rgba(20, 0, 30, ${k * 0.85})`;
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          // 곡선
+          const mx = (px + t.x) / 2 + (Math.random() - 0.5) * 10;
+          const my = (py + t.y) / 2 - 15;
+          ctx.quadraticCurveTo(mx, my, t.x, t.y);
+          ctx.stroke();
+          // 가시 위 큰 먹물 얼룩
+          ctx.fillStyle = `rgba(20, 0, 40, ${k * 0.9})`;
+          ctx.beginPath();
+          const splatR = 14 + (1 - k) * 8;
+          for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+            const r = splatR + Math.sin(a * 3) * 4;
+            const sx = t.x + Math.cos(a) * r;
+            const sy = t.y + Math.sin(a) * r;
+            if (a === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+          }
+          ctx.closePath();
+          ctx.fill();
+          // 작은 먹물 방울 주변
+          ctx.fillStyle = `rgba(40, 0, 60, ${k * 0.7})`;
+          for (let i = 0; i < 5; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const dist = 18 + Math.random() * 10;
+            ctx.beginPath();
+            ctx.arc(t.x + Math.cos(ang) * dist, t.y + Math.sin(ang) * dist, 2 + Math.random() * 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+        return;
+      }
 
       // === 아기: 초음파 동심원 파동 ===
       if (electricBoltType === 'baby') {
