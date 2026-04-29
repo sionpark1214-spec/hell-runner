@@ -1033,7 +1033,6 @@
       { key: 'electricMaster', icon: '⚡', name: '전기지휘자',           desc: '10초마다 가시 한 묶음 부숨', cost: 50000, unlock: 'buy' },
       { key: 'electricKing', icon: '👑', name: '전기의 왕',              desc: '5초마다 가시 5개 부숨', cost: 100000, unlock: 'buy' },
       { key: 'squid',        icon: '🦑', name: '오징어',                  desc: '10초마다 먹물로 가시 3개 없앰', cost: 30000, unlock: 'buy' },
-      { key: 'baby',         icon: '👶', name: '아기의 능력',             desc: '20초마다 소리쳐 가시 10개 날림', cost: 0, unlock: 'code' },
       { key: 'mom',          icon: '🤱', name: '엄마의 능력',             desc: '10초마다 등짝스매싱! 가시 2개', cost: 9999, unlock: 'buy' },
     ];
     const abilities = {};            // 켜짐/꺼짐 상태
@@ -1078,8 +1077,6 @@
       'PARKSION매력있어다이노소어크래샌도': { master: true, bigcoin: true, msg: '🌟 PARKSION매력있어다이노소어크래샌도! 다 받음 + 엄청난 돈!' },
       // 사과 코드
       '미안': { coin: 6000, msg: '🙏 미안해! 6000원!' },
-      // 아기 능력 잠금 해제
-      'BABY아기': { ability: 'baby', msg: '👶 아기 능력 받음!' },
     };
     let usedCodes = {};
     let lastSpinMs = 0;        // 마지막 일반 스핀 (10시간 쿨다운)
