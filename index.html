@@ -1776,10 +1776,10 @@
       }
     } catch (e) {}
     // ====== 🎉 1회성 이벤트 ======
-    // 오늘(2026-05-05) 오후 3시 시작, 오후 2시부터 카운트다운, 보상 100,000원
+    // 오늘(2026-05-05) 오후 3시 시작, 오후 2시부터 카운트다운
+    // ↓ 보상은 시온이가 직접 정하기! (event-claim 핸들러 안)
     const EVENT_START_MS = new Date(2026, 4, 5, 15, 0, 0).getTime();   // month는 0부터
     const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;            // 1시간 전부터 알림
-    const EVENT_REWARD = 100000;
     let eventClaimed = false;
 
     function saveProgress() {
@@ -5335,14 +5335,18 @@
         banner.classList.remove('upcoming');
         claimBtn.classList.remove('hidden');
         titleEl.textContent = '🎁 이벤트가 시작됐습니다!';
-        timeEl.textContent = '보상: 💰 ' + EVENT_REWARD.toLocaleString() + '원';
+        timeEl.textContent = '';
       }
     }
     document.getElementById('event-claim').addEventListener('click', () => {
       if (eventClaimed) return;
       if (Date.now() < EVENT_START_MS) return;
       eventClaimed = true;
-      coins += EVENT_REWARD;
+      // ↓↓↓ 시온이가 여기에 보상 직접 적기! ↓↓↓
+      // 예: coins += 50000;
+      //     ownedSkins['천사'] = true;
+      //     freeSpins += 5;
+
       try { playDingSound(); } catch (e) {}
       saveProgress();
       updateEventBanner();
