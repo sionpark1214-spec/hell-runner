@@ -188,6 +188,46 @@
       margin-bottom: 12px;
       white-space: nowrap;
     }
+    .event-banner {
+      margin: 6px auto 4px;
+      padding: 10px 14px;
+      max-width: 280px;
+      border-radius: 12px;
+      font-weight: bold;
+      text-align: center;
+      animation: eventGlow 1.4s ease-in-out infinite;
+    }
+    .event-banner.upcoming {
+      background: linear-gradient(180deg, #1976d2, #0d47a1);
+      color: #fff;
+      border: 2px solid #90caf9;
+      box-shadow: 0 0 14px rgba(144, 202, 249, 0.7);
+    }
+    .event-banner.live {
+      background: linear-gradient(180deg, #f57f17, #e65100);
+      color: #fff;
+      border: 2px solid #ffeb3b;
+      box-shadow: 0 0 18px rgba(255, 235, 59, 0.85);
+    }
+    .event-banner .ev-title { font-size: 15px; }
+    .event-banner .ev-time { font-size: 13px; opacity: 0.95; margin-top: 3px; }
+    .event-banner .event-claim {
+      margin-top: 8px;
+      background: linear-gradient(180deg, #ffeb3b, #f57f17);
+      border: 2px solid #fff59d;
+      box-shadow: 0 3px 0 #6a4c00;
+      color: #000;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .event-banner .event-claim:active { box-shadow: 0 1px 0 #6a4c00; transform: translateY(2px); }
+    @keyframes eventGlow {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
     .screen button.code-btn {
       background: linear-gradient(180deg, #ffeb3b, #f57f17);
       border-color: #fff59d;
@@ -719,6 +759,11 @@
           <h1>🔥 지옥 달리기 🔥</h1>
           <p>가시 피하면서 끝까지 달려!</p>
           <p class="small">라운드 <span id="start-round">1</span> / 4</p>
+          <div id="event-banner" class="event-banner hidden">
+            <div class="ev-line ev-title"></div>
+            <div class="ev-line ev-time"></div>
+            <button id="event-claim" class="event-claim hidden">🎁 보상 받기!</button>
+          </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
               <button id="help-btn" class="help-btn">❓ 도움말</button>
@@ -1730,9 +1775,16 @@
         localStorage.setItem(RESET_MARKER_KEY, RESET_VERSION);
       }
     } catch (e) {}
+    // ====== 🎉 1회성 이벤트 ======
+    // 오늘(2026-05-05) 오후 3시 시작, 오후 2시부터 카운트다운, 보상 100,000원
+    const EVENT_START_MS = new Date(2026, 4, 5, 15, 0, 0).getTime();   // month는 0부터
+    const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;            // 1시간 전부터 알림
+    const EVENT_REWARD = 100000;
+    let eventClaimed = false;
+
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1764,6 +1816,7 @@
         if (typeof data.cheerEnabled === 'boolean') cheerEnabled = data.cheerEnabled;
         if (typeof data.lastSpinMs === 'number') lastSpinMs = data.lastSpinMs;
         if (typeof data.freeSpins === 'number') freeSpins = data.freeSpins;
+        if (typeof data.eventClaimed === 'boolean') eventClaimed = data.eventClaimed;
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
@@ -5253,6 +5306,50 @@
     // 처음엔 인트로 화면 우선 표시
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('intro-screen').classList.remove('hidden');
+
+    // ====== 🎉 이벤트 배너 갱신 ======
+    function updateEventBanner() {
+      const banner = document.getElementById('event-banner');
+      const titleEl = banner.querySelector('.ev-title');
+      const timeEl  = banner.querySelector('.ev-time');
+      const claimBtn = document.getElementById('event-claim');
+      // 이미 받았으면 영영 숨김
+      if (eventClaimed) { banner.classList.add('hidden'); return; }
+      const now = Date.now();
+      // 시작 1시간 전 이전 → 숨김
+      if (now < EVENT_NOTIFY_MS) { banner.classList.add('hidden'); return; }
+      banner.classList.remove('hidden');
+      if (now < EVENT_START_MS) {
+        // 1시간 전 ~ 시작 직전: 카운트다운
+        banner.classList.add('upcoming');
+        banner.classList.remove('live');
+        claimBtn.classList.add('hidden');
+        const remain = EVENT_START_MS - now;
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        titleEl.textContent = '🎉 곧 이벤트가 시작됩니다!';
+        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+      } else {
+        // 시작 시각 도달: 받기 버튼
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        claimBtn.classList.remove('hidden');
+        titleEl.textContent = '🎁 이벤트가 시작됐습니다!';
+        timeEl.textContent = '보상: 💰 ' + EVENT_REWARD.toLocaleString() + '원';
+      }
+    }
+    document.getElementById('event-claim').addEventListener('click', () => {
+      if (eventClaimed) return;
+      if (Date.now() < EVENT_START_MS) return;
+      eventClaimed = true;
+      coins += EVENT_REWARD;
+      try { playDingSound(); } catch (e) {}
+      saveProgress();
+      updateEventBanner();
+    });
+    updateEventBanner();
+    setInterval(updateEventBanner, 1000);
+
     requestAnimationFrame(loop);
   })();
   </script>
