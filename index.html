@@ -1122,8 +1122,11 @@
       'PARKSION매력있어다이노소어크래샌도': { master: true, bigcoin: true, msg: '🌟 PARKSION매력있어다이노소어크래샌도! 다 받음 + 엄청난 돈!' },
       // 사과 코드
       '미안': { coin: 6000, msg: '🙏 미안해! 6000원!' },
+      // 🎉 이벤트 코드타임 한정 코드 (10분만 유효, 한 번만)
+      'WOW': { coin: 1000, eventCode: true, msg: '🎉 코드타임 보상! 1000원!' },
     };
     let usedCodes = {};
+    let codeRevealed = null;   // null=아직 안 굴림, true=공개, false=꽝
     let lastSpinMs = 0;        // 마지막 일반 스핀 (10시간 쿨다운)
     let freeSpins = 0;         // 보너스로 쌓인 스핀 횟수
     const SPIN_COOLDOWN_MS = 10 * 3600 * 1000;
@@ -1780,11 +1783,12 @@
     // ↓ 보상은 시온이가 직접 정하기! (event-claim 핸들러 안)
     const EVENT_START_MS = new Date(2026, 4, 5, 15, 0, 0).getTime();   // month는 0부터
     const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;            // 1시간 전부터 알림
+    const CODE_TIME_END_MS = EVENT_START_MS + 10 * 60 * 1000;           // 시작 후 10분간 코드타임
     let eventClaimed = false;
 
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed, codeRevealed };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1817,6 +1821,7 @@
         if (typeof data.lastSpinMs === 'number') lastSpinMs = data.lastSpinMs;
         if (typeof data.freeSpins === 'number') freeSpins = data.freeSpins;
         if (typeof data.eventClaimed === 'boolean') eventClaimed = data.eventClaimed;
+        if (typeof data.codeRevealed === 'boolean') codeRevealed = data.codeRevealed;
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
@@ -5048,6 +5053,25 @@
         result.className = 'code-result fail';
         return;
       }
+      // 🎉 이벤트 코드타임 한정 코드: 10분 안에만 작동
+      if (reward.eventCode) {
+        const now = Date.now();
+        if (now < EVENT_START_MS) {
+          result.textContent = '아직 안 됨!';
+          result.className = 'code-result fail';
+          return;
+        }
+        if (now >= CODE_TIME_END_MS) {
+          result.textContent = '코드타임 끝났어 😢';
+          result.className = 'code-result fail';
+          return;
+        }
+        if (codeRevealed !== true) {
+          result.textContent = '없는 코드야';
+          result.className = 'code-result fail';
+          return;
+        }
+      }
       // 보상 지급
       if (reward.coin)    coins += reward.coin;
       if (reward.ability) owned[reward.ability] = true;
@@ -5313,14 +5337,12 @@
       const titleEl = banner.querySelector('.ev-title');
       const timeEl  = banner.querySelector('.ev-time');
       const claimBtn = document.getElementById('event-claim');
-      // 이미 받았으면 영영 숨김
-      if (eventClaimed) { banner.classList.add('hidden'); return; }
       const now = Date.now();
       // 시작 1시간 전 이전 → 숨김
       if (now < EVENT_NOTIFY_MS) { banner.classList.add('hidden'); return; }
       banner.classList.remove('hidden');
       if (now < EVENT_START_MS) {
-        // 1시간 전 ~ 시작 직전: 카운트다운
+        // === 1시간 전 ~ 시작 직전: 카운트다운 ===
         banner.classList.add('upcoming');
         banner.classList.remove('live');
         claimBtn.classList.add('hidden');
@@ -5329,8 +5351,36 @@
         const s = Math.floor((remain % 60000) / 1000);
         titleEl.textContent = '🎉 곧 이벤트가 시작됩니다!';
         timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+      } else if (now < CODE_TIME_END_MS) {
+        // === 시작 후 10분: 코드타임 ===
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        claimBtn.classList.add('hidden');
+        // 처음 진입 시 한 번 10% 주사위
+        if (codeRevealed === null) {
+          codeRevealed = Math.random() < 0.10;
+          saveProgress();
+        }
+        const remain = CODE_TIME_END_MS - now;
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        if (codeRevealed === true) {
+          if (usedCodes['WOW']) {
+            titleEl.textContent = '🔑 코드타임 진행중!';
+            timeEl.textContent = '✅ 코드 사용 완료 — ' + m + '분 ' + s + '초 남음';
+          } else {
+            titleEl.textContent = '🔑 비밀 코드: WOW';
+            timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 안에 코드 입력!';
+          }
+        } else {
+          titleEl.textContent = '🔑 코드타임 진행중!';
+          timeEl.textContent = '🤫 비밀 코드는 안 나왔어 — ' + m + '분 ' + s + '초 남음';
+        }
+      } else if (eventClaimed) {
+        banner.classList.add('hidden');
+        return;
       } else {
-        // 시작 시각 도달: 받기 버튼
+        // === 코드타임 끝난 뒤: 보상 받기 (시온이가 보상 정함) ===
         banner.classList.add('live');
         banner.classList.remove('upcoming');
         claimBtn.classList.remove('hidden');
