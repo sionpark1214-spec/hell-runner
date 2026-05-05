@@ -1806,6 +1806,7 @@
       coins += amount;
     }
     let eventClaimed = false;
+    let eventEntryBonus = false;   // 이벤트 입장 보너스 1회성
     // 📦 상자타임
     let eventBoxes = [];          // {x, y, r}
     let lastBoxSpawnMs = 0;
@@ -1814,7 +1815,7 @@
 
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed, codeRevealed, lastSpinBonusMs };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed, codeRevealed, lastSpinBonusMs, eventEntryBonus };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1849,6 +1850,7 @@
         if (typeof data.eventClaimed === 'boolean') eventClaimed = data.eventClaimed;
         if (typeof data.codeRevealed === 'boolean') codeRevealed = data.codeRevealed;
         if (typeof data.lastSpinBonusMs === 'number') lastSpinBonusMs = data.lastSpinBonusMs;
+        if (typeof data.eventEntryBonus === 'boolean') eventEntryBonus = data.eventEntryBonus;
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
@@ -5453,6 +5455,15 @@
       banner.classList.remove('hidden');
 
       const slot = getCurrentSlot();
+
+      // 🎁 이벤트 입장 보너스: 슬롯 활성중 처음 들어오면 1000원 (1회만)
+      if (slot !== null && !eventEntryBonus) {
+        eventEntryBonus = true;
+        coins += 1000;
+        saveProgress();
+        try { playDingSound(); } catch (e) {}
+        try { flashCoins(); } catch (e) {}
+      }
 
       // 🎰 스핀타임: 1분마다 freeSpins +1 (10번 충전)
       if (slot === 'spin') {
