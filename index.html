@@ -1783,12 +1783,38 @@
     // ↓ 보상은 시온이가 직접 정하기! (event-claim 핸들러 안)
     const EVENT_START_MS = new Date(2026, 4, 5, 15, 0, 0).getTime();   // month는 0부터
     const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;            // 1시간 전부터 알림
-    const CODE_TIME_END_MS = EVENT_START_MS + 10 * 60 * 1000;           // 시작 후 10분간 코드타임
+    // 슬롯 5개, 각 10분
+    const SLOT_MS = 10 * 60 * 1000;
+    const SLOT1_END_MS = EVENT_START_MS + 1 * SLOT_MS;   // 코드타임 끝 (15:10)
+    const SLOT2_END_MS = EVENT_START_MS + 2 * SLOT_MS;   // 댄스타임 끝 (15:20)
+    const SLOT3_END_MS = EVENT_START_MS + 3 * SLOT_MS;   // 머니타임 끝 (15:30)
+    const SLOT4_END_MS = EVENT_START_MS + 4 * SLOT_MS;   // 상자타임 끝 (15:40)
+    const SLOT5_END_MS = EVENT_START_MS + 5 * SLOT_MS;   // 스핀타임 끝 (15:50)
+    const CODE_TIME_END_MS = SLOT1_END_MS;                // 호환용 별칭
+    function getCurrentSlot() {
+      const now = Date.now();
+      if (now < EVENT_START_MS) return null;
+      if (now < SLOT1_END_MS) return 'code';
+      if (now < SLOT2_END_MS) return 'dance';
+      if (now < SLOT3_END_MS) return 'money';
+      if (now < SLOT4_END_MS) return 'box';
+      if (now < SLOT5_END_MS) return 'spin';
+      return null;
+    }
+    function awardCoins(amount) {
+      if (getCurrentSlot() === 'money') amount = Math.floor(amount * 1.5);
+      coins += amount;
+    }
     let eventClaimed = false;
+    // 📦 상자타임
+    let eventBoxes = [];          // {x, y, r}
+    let lastBoxSpawnMs = 0;
+    // 🎰 스핀타임
+    let lastSpinBonusMs = 0;
 
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed, codeRevealed };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed, codeRevealed, lastSpinBonusMs };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1822,6 +1848,7 @@
         if (typeof data.freeSpins === 'number') freeSpins = data.freeSpins;
         if (typeof data.eventClaimed === 'boolean') eventClaimed = data.eventClaimed;
         if (typeof data.codeRevealed === 'boolean') codeRevealed = data.codeRevealed;
+        if (typeof data.lastSpinBonusMs === 'number') lastSpinBonusMs = data.lastSpinBonusMs;
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
@@ -2760,6 +2787,35 @@
         // 아이템 충돌 (무적이든 아니든 먹을 수 있음)
         const phx = player.x + PLAYER_W / 2;
         const phy = player.y + PLAYER_H / 2;
+        // 📦 상자타임: 5초마다 5% 확률로 앞에 상자 스폰
+        if (getCurrentSlot() === 'box') {
+          const now5 = performance.now();
+          if (now5 - lastBoxSpawnMs >= 5000) {
+            lastBoxSpawnMs = now5;
+            if (Math.random() < 0.05) {
+              eventBoxes.push({
+                x: player.x + 600 + Math.random() * 400,
+                y: GROUND_Y - 50 - Math.random() * 30,
+                r: 14
+              });
+            }
+          }
+        } else {
+          // 슬롯 끝나면 상자 다 사라짐
+          if (eventBoxes.length > 0) eventBoxes = [];
+        }
+        // 📦 상자 충돌
+        for (let i = eventBoxes.length - 1; i >= 0; i--) {
+          const bx = eventBoxes[i];
+          const dx = phx - bx.x, dy = phy - bx.y;
+          const rr = (PLAYER_W / 2 + bx.r);
+          if (dx * dx + dy * dy < rr * rr) {
+            const reward = Math.random() < 0.01 ? 1000 : 500;
+            awardCoins(reward);
+            eventBoxes.splice(i, 1);
+            try { playDingSound(); } catch (e) {}
+          }
+        }
         for (let i = potions.length - 1; i >= 0; i--) {
           const pp = potions[i];
           const dx = phx - pp.x, dy = phy - pp.y;
@@ -3294,6 +3350,49 @@
       ctx.fillStyle = 'rgba(255, 87, 34, 0.15)';
       for (let x = start; x < camera.x + DW + 60; x += 30) {
         ctx.fillRect(x, GROUND_Y + 30 + (x % 40), 14, 1);
+      }
+    }
+
+    function drawEventBoxes() {
+      if (eventBoxes.length === 0) return;
+      const t = performance.now();
+      for (const b of eventBoxes) {
+        if (b.x + 30 < camera.x - 10) continue;
+        if (b.x - 30 > camera.x + DW + 10) continue;
+        const bob = Math.sin(t * 0.005 + b.x) * 3;
+        const cx = b.x;
+        const cy = b.y + bob;
+        // 빛 글로우
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        for (let i = 3; i > 0; i--) {
+          ctx.fillStyle = `rgba(255, 235, 59, ${0.10 * i})`;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 10 + i * 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        // 박스 본체 (갈색 사각형)
+        ctx.fillStyle = '#8d6e63';
+        ctx.fillRect(cx - 12, cy - 10, 24, 20);
+        ctx.fillStyle = '#6d4c41';
+        ctx.fillRect(cx - 12, cy - 10, 24, 4);
+        ctx.fillRect(cx - 12, cy + 6, 24, 4);
+        // 노란 리본
+        ctx.fillStyle = '#ffeb3b';
+        ctx.fillRect(cx - 2, cy - 10, 4, 20);
+        ctx.fillRect(cx - 12, cy - 2, 24, 4);
+        // 외곽선
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 1.4;
+        ctx.strokeRect(cx - 12, cy - 10, 24, 20);
+        // 🎁 이모지
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🎁', cx, cy);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
       }
     }
 
@@ -4774,6 +4873,7 @@
       drawElectricBolts();
       drawPotions();
       drawWings();
+      drawEventBoxes();
       if (state === STATE.DEAD) {
         drawPieces();
       } else {
@@ -4784,6 +4884,16 @@
           const baseY = player.y + PLAYER_H;
           ctx.translate(cx, baseY);
           ctx.scale(1.8, 1.8);
+          ctx.translate(-cx, -baseY);
+        }
+        // 💃 댄스타임: 캐릭터가 좌우로 흔들흔들 (시각만)
+        if (getCurrentSlot() === 'dance') {
+          const cx = player.x + PLAYER_W / 2;
+          const baseY = player.y + PLAYER_H;
+          const t = performance.now();
+          const angle = Math.sin(t * 0.01) * 0.18;   // ±10도쯤 흔들
+          ctx.translate(cx, baseY);
+          ctx.rotate(angle);
           ctx.translate(-cx, -baseY);
         }
         // 유령: 반투명
@@ -5242,15 +5352,15 @@
       if (bossMode) {
         if (!owned['devilKing']) {
           // 처음 깰 때 — 500원 + 능력/스킨 잠금 해제
-          coins += 500;
+          awardCoins(500);
           owned['devilKing'] = true;
           ownedSkins['devil'] = true;
         } else {
           // 그 다음부터는 100원만
-          coins += 100;
+          awardCoins(100);
         }
       } else {
-        coins += 100 * round;
+        awardCoins(100 * round);
         if (round === 4) {
           owned['angelRevive5'] = true;   // 천사의 능력
           ownedSkins['angel'] = true;     // 천사 스킨
@@ -5341,6 +5451,23 @@
       // 시작 1시간 전 이전 → 숨김
       if (now < EVENT_NOTIFY_MS) { banner.classList.add('hidden'); return; }
       banner.classList.remove('hidden');
+
+      const slot = getCurrentSlot();
+
+      // 🎰 스핀타임: 1분마다 freeSpins +1 (10번 충전)
+      if (slot === 'spin') {
+        if (lastSpinBonusMs < EVENT_START_MS + 4 * SLOT_MS) {
+          // 처음 진입: 다음 충전 시점을 슬롯 시작 + 1분으로
+          lastSpinBonusMs = EVENT_START_MS + 4 * SLOT_MS;
+        }
+        // 1분 단위로 적립
+        while (lastSpinBonusMs + 60000 <= now && lastSpinBonusMs + 60000 <= SLOT5_END_MS) {
+          lastSpinBonusMs += 60000;
+          freeSpins += 1;
+          saveProgress();
+        }
+      }
+
       if (now < EVENT_START_MS) {
         // === 1시간 전 ~ 시작 직전: 카운트다운 ===
         banner.classList.add('upcoming');
@@ -5351,17 +5478,15 @@
         const s = Math.floor((remain % 60000) / 1000);
         titleEl.textContent = '🎉 곧 이벤트가 시작됩니다!';
         timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
-      } else if (now < CODE_TIME_END_MS) {
-        // === 시작 후 10분: 코드타임 ===
+      } else if (slot === 'code') {
         banner.classList.add('live');
         banner.classList.remove('upcoming');
         claimBtn.classList.add('hidden');
-        // 처음 진입 시 한 번 10% 주사위
         if (codeRevealed === null) {
           codeRevealed = Math.random() < 0.10;
           saveProgress();
         }
-        const remain = CODE_TIME_END_MS - now;
+        const remain = SLOT1_END_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
         if (codeRevealed === true) {
@@ -5376,15 +5501,51 @@
           titleEl.textContent = '🔑 코드타임 진행중!';
           timeEl.textContent = '🤫 비밀 코드는 안 나왔어 — ' + m + '분 ' + s + '초 남음';
         }
+      } else if (slot === 'dance') {
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        claimBtn.classList.add('hidden');
+        const remain = SLOT2_END_MS - now;
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        titleEl.textContent = '💃 댄스타임! 캐릭터가 춤춰!';
+        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+      } else if (slot === 'money') {
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        claimBtn.classList.add('hidden');
+        const remain = SLOT3_END_MS - now;
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        titleEl.textContent = '💰 머니타임! 코인 1.5배!';
+        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+      } else if (slot === 'box') {
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        claimBtn.classList.add('hidden');
+        const remain = SLOT4_END_MS - now;
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        titleEl.textContent = '📦 상자타임! 5%로 상자 등장!';
+        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+      } else if (slot === 'spin') {
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        claimBtn.classList.add('hidden');
+        const remain = SLOT5_END_MS - now;
+        const m = Math.floor(remain / 60000);
+        const s = Math.floor((remain % 60000) / 1000);
+        titleEl.textContent = '🎰 스핀타임! 1분마다 무료 스핀!';
+        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음 (보너스: ' + freeSpins + '번)';
       } else if (eventClaimed) {
         banner.classList.add('hidden');
         return;
       } else {
-        // === 코드타임 끝난 뒤: 보상 받기 (시온이가 보상 정함) ===
+        // === 모든 슬롯 끝: 보상 받기 ===
         banner.classList.add('live');
         banner.classList.remove('upcoming');
         claimBtn.classList.remove('hidden');
-        titleEl.textContent = '🎁 이벤트가 시작됐습니다!';
+        titleEl.textContent = '🎁 이벤트가 끝났어요!';
         timeEl.textContent = '';
       }
     }
