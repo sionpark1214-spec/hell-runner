@@ -211,19 +211,6 @@
     }
     .event-banner .ev-title { font-size: 15px; }
     .event-banner .ev-time { font-size: 13px; opacity: 0.95; margin-top: 3px; }
-    .event-banner .event-claim {
-      margin-top: 8px;
-      background: linear-gradient(180deg, #ffeb3b, #f57f17);
-      border: 2px solid #fff59d;
-      box-shadow: 0 3px 0 #6a4c00;
-      color: #000;
-      font-size: 14px;
-      font-weight: bold;
-      padding: 6px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .event-banner .event-claim:active { box-shadow: 0 1px 0 #6a4c00; transform: translateY(2px); }
     @keyframes eventGlow {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.04); }
@@ -762,7 +749,6 @@
           <div id="event-banner" class="event-banner hidden">
             <div class="ev-line ev-title"></div>
             <div class="ev-line ev-time"></div>
-            <button id="event-claim" class="event-claim hidden">🎁 보상 받기!</button>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
@@ -1779,8 +1765,8 @@
       }
     } catch (e) {}
     // ====== 🎉 1회성 이벤트 ======
-    // 오늘(2026-05-05) 오후 3시 시작, 오후 2시부터 카운트다운
-    // ↓ 보상은 시온이가 직접 정하기! (event-claim 핸들러 안)
+    // 오늘(2026-05-05) 오후 3:30 시작, 오후 2:30부터 카운트다운
+    // 보상: 들어오면 자동 1000원 (1번만) + 슬롯별 효과들
     const EVENT_START_MS = new Date(2026, 4, 5, 15, 30, 0).getTime();  // 오후 3:30 시작 (month는 0부터)
     const EVENT_END_MS   = EVENT_START_MS + 60 * 60 * 1000;             // 오후 4:30 이벤트 완전 종료
     const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;             // 1시간 전부터 알림 (오후 2:30)
@@ -1806,8 +1792,7 @@
       if (getCurrentSlot() === 'money') amount = Math.floor(amount * 1.5);
       coins += amount;
     }
-    let eventClaimed = false;
-    let eventEntryBonus = false;   // 이벤트 입장 보너스 1회성
+    let eventEntryBonus = false;   // 이벤트 입장 보너스 1회성 (들어오면 자동 1000원)
     // 📦 상자타임
     let eventBoxes = [];          // {x, y, r}
     let lastBoxSpawnMs = 0;
@@ -1816,7 +1801,7 @@
 
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, eventClaimed, codeRevealed, lastSpinBonusMs, eventEntryBonus };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, codeRevealed, lastSpinBonusMs, eventEntryBonus };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1848,7 +1833,6 @@
         if (typeof data.cheerEnabled === 'boolean') cheerEnabled = data.cheerEnabled;
         if (typeof data.lastSpinMs === 'number') lastSpinMs = data.lastSpinMs;
         if (typeof data.freeSpins === 'number') freeSpins = data.freeSpins;
-        if (typeof data.eventClaimed === 'boolean') eventClaimed = data.eventClaimed;
         if (typeof data.codeRevealed === 'boolean') codeRevealed = data.codeRevealed;
         if (typeof data.lastSpinBonusMs === 'number') lastSpinBonusMs = data.lastSpinBonusMs;
         if (typeof data.eventEntryBonus === 'boolean') eventEntryBonus = data.eventEntryBonus;
@@ -5449,7 +5433,6 @@
       const banner = document.getElementById('event-banner');
       const titleEl = banner.querySelector('.ev-title');
       const timeEl  = banner.querySelector('.ev-time');
-      const claimBtn = document.getElementById('event-claim');
       const now = Date.now();
       // 시작 1시간 전 이전 → 숨김
       if (now < EVENT_NOTIFY_MS) { banner.classList.add('hidden'); return; }
@@ -5487,7 +5470,6 @@
         // === 1시간 전 ~ 시작 직전: 카운트다운 ===
         banner.classList.add('upcoming');
         banner.classList.remove('live');
-        claimBtn.classList.add('hidden');
         const remain = EVENT_START_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
@@ -5496,7 +5478,6 @@
       } else if (slot === 'code') {
         banner.classList.add('live');
         banner.classList.remove('upcoming');
-        claimBtn.classList.add('hidden');
         if (codeRevealed === null) {
           codeRevealed = Math.random() < 0.10;
           saveProgress();
@@ -5519,7 +5500,6 @@
       } else if (slot === 'dance') {
         banner.classList.add('live');
         banner.classList.remove('upcoming');
-        claimBtn.classList.add('hidden');
         const remain = SLOT2_END_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
@@ -5528,7 +5508,6 @@
       } else if (slot === 'money') {
         banner.classList.add('live');
         banner.classList.remove('upcoming');
-        claimBtn.classList.add('hidden');
         const remain = SLOT3_END_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
@@ -5537,7 +5516,6 @@
       } else if (slot === 'box') {
         banner.classList.add('live');
         banner.classList.remove('upcoming');
-        claimBtn.classList.add('hidden');
         const remain = SLOT4_END_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
@@ -5546,37 +5524,17 @@
       } else if (slot === 'spin') {
         banner.classList.add('live');
         banner.classList.remove('upcoming');
-        claimBtn.classList.add('hidden');
         const remain = SLOT5_END_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
         titleEl.textContent = '🎰 스핀타임! 1분마다 무료 스핀!';
         timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음 (보너스: ' + freeSpins + '번)';
-      } else if (eventClaimed) {
+      } else {
         banner.classList.add('hidden');
         return;
-      } else {
-        // === 모든 슬롯 끝: 보상 받기 ===
-        banner.classList.add('live');
-        banner.classList.remove('upcoming');
-        claimBtn.classList.remove('hidden');
-        titleEl.textContent = '🎁 이벤트가 끝났어요!';
-        timeEl.textContent = '';
       }
     }
-    document.getElementById('event-claim').addEventListener('click', () => {
-      if (eventClaimed) return;
-      if (Date.now() < EVENT_START_MS) return;
-      eventClaimed = true;
-      // ↓↓↓ 시온이가 여기에 보상 직접 적기! ↓↓↓
-      // 예: coins += 50000;
-      //     ownedSkins['천사'] = true;
-      //     freeSpins += 5;
-
-      try { playDingSound(); } catch (e) {}
-      saveProgress();
-      updateEventBanner();
-    });
+    // 받기 버튼 제거됨 — 입장 보너스 1000원이 자동 지급됨 (위 입장 보너스 분기 참고)
     updateEventBanner();
     setInterval(updateEventBanner, 1000);
 
