@@ -2792,7 +2792,7 @@
           const now5 = performance.now();
           if (now5 - lastBoxSpawnMs >= 5000) {
             lastBoxSpawnMs = now5;
-            if (Math.random() < 0.05) {
+            if (Math.random() < 0.10) {
               eventBoxes.push({
                 x: player.x + 600 + Math.random() * 400,
                 y: GROUND_Y - 50 - Math.random() * 30,
@@ -5526,7 +5526,7 @@
         const remain = SLOT4_END_MS - now;
         const m = Math.floor(remain / 60000);
         const s = Math.floor((remain % 60000) / 1000);
-        titleEl.textContent = '📦 상자타임! 5%로 상자 등장!';
+        titleEl.textContent = '📦 상자타임! 10%로 상자 등장!';
         timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
       } else if (slot === 'spin') {
         banner.classList.add('live');
