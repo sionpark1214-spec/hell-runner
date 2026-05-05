@@ -1784,8 +1784,8 @@
     const EVENT_START_MS = new Date(2026, 4, 5, 15, 30, 0).getTime();  // 오후 3:30 시작 (month는 0부터)
     const EVENT_END_MS   = EVENT_START_MS + 60 * 60 * 1000;             // 오후 4:30 이벤트 완전 종료
     const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;             // 1시간 전부터 알림 (오후 2:30)
-    // 슬롯 5개, 각 10분 (15:30~16:20 동안 슬롯 진행, 16:20~16:30 받기 단계)
-    const SLOT_MS = 10 * 60 * 1000;
+    // 슬롯 5개, 각 12분 (15:30~16:30 정확히 60분 꽉 채움)
+    const SLOT_MS = 12 * 60 * 1000;
     const SLOT1_END_MS = EVENT_START_MS + 1 * SLOT_MS;   // 코드타임 끝 (15:10)
     const SLOT2_END_MS = EVENT_START_MS + 2 * SLOT_MS;   // 댄스타임 끝 (15:20)
     const SLOT3_END_MS = EVENT_START_MS + 3 * SLOT_MS;   // 머니타임 끝 (15:30)
