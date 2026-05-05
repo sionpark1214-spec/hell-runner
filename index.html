@@ -1764,44 +1764,66 @@
         localStorage.setItem(RESET_MARKER_KEY, RESET_VERSION);
       }
     } catch (e) {}
-    // ====== 🎉 1회성 이벤트 ======
-    // 오늘(2026-05-05) 오후 3:30 시작, 오후 2:30부터 카운트다운
-    // 보상: 들어오면 자동 1000원 (1번만) + 슬롯별 효과들
-    const EVENT_START_MS = new Date(2026, 4, 5, 15, 30, 0).getTime();  // 오후 3:30 시작 (month는 0부터)
-    const EVENT_END_MS   = EVENT_START_MS + 60 * 60 * 1000;             // 오후 4:30 이벤트 완전 종료
-    const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;             // 1시간 전부터 알림 (오후 2:30)
-    // 슬롯 5개, 각 12분 (15:30~16:30 정확히 60분 꽉 채움)
-    const SLOT_MS = 12 * 60 * 1000;
-    const SLOT1_END_MS = EVENT_START_MS + 1 * SLOT_MS;   // 🔑 코드타임 끝 (15:42)
-    const SLOT2_END_MS = EVENT_START_MS + 2 * SLOT_MS;   // 💃 댄스타임 끝 (15:54)
-    const SLOT3_END_MS = EVENT_START_MS + 3 * SLOT_MS;   // 💰 머니타임 끝 (16:06)
-    const SLOT4_END_MS = EVENT_START_MS + 4 * SLOT_MS;   // 📦 상자타임 끝 (16:18)
-    const SLOT5_END_MS = EVENT_START_MS + 5 * SLOT_MS;   // 🎰 스핀타임 끝 (16:30)
-    const CODE_TIME_END_MS = SLOT1_END_MS;                // 호환용 별칭
-    function getCurrentSlot() {
+    // ====== 🎉 이벤트 (오늘 두 번: 15:30~16:30, 18:00~19:00) ======
+    // 보상: 들어오면 자동 1000원 (이벤트마다 1번씩) + 슬롯별 효과들
+    const EVENT_TIMES = [
+      { start: new Date(2026, 4, 5, 15, 30, 0).getTime() },   // 1차 이벤트
+      { start: new Date(2026, 4, 5, 18,  0, 0).getTime() },   // 2차 이벤트
+    ];
+    const SLOT_MS = 12 * 60 * 1000;        // 슬롯 1개 12분
+    const SLOTS_PER_EVENT = 5;             // 이벤트당 슬롯 5개 (코드/댄스/머니/상자/스핀)
+    const EVENT_DURATION_MS = SLOT_MS * SLOTS_PER_EVENT;   // 60분
+    const NOTIFY_BEFORE_MS = 60 * 60 * 1000;               // 1시간 전부터 알림
+
+    function getActiveEvent() {
       const now = Date.now();
-      if (now < EVENT_START_MS) return null;
-      if (now < SLOT1_END_MS) return 'code';
-      if (now < SLOT2_END_MS) return 'dance';
-      if (now < SLOT3_END_MS) return 'money';
-      if (now < SLOT4_END_MS) return 'box';
-      if (now < SLOT5_END_MS) return 'spin';
+      for (let i = 0; i < EVENT_TIMES.length; i++) {
+        const start = EVENT_TIMES[i].start;
+        const end = start + EVENT_DURATION_MS;
+        const notify = start - NOTIFY_BEFORE_MS;
+        if (now >= notify && now < end) {
+          return { start, end, notify, index: i };
+        }
+      }
       return null;
+    }
+    function getCurrentSlot() {
+      const ev = getActiveEvent();
+      if (!ev) return null;
+      const now = Date.now();
+      if (now < ev.start) return null;
+      const idx = Math.floor((now - ev.start) / SLOT_MS);
+      return ['code', 'dance', 'money', 'box', 'spin'][idx] || null;
     }
     function awardCoins(amount) {
       if (getCurrentSlot() === 'money') amount = Math.floor(amount * 1.5);
       coins += amount;
     }
-    let eventEntryBonus = false;   // 이벤트 입장 보너스 1회성 (들어오면 자동 1000원)
-    // 📦 상자타임
-    let eventBoxes = [];          // {x, y, r}
+    // 1회성 플래그들 — 이벤트가 바뀌면 checkEventReset()에서 다 초기화됨
+    let lastEventIdx = -1;          // 마지막으로 처리한 이벤트 인덱스
+    let eventEntryBonus = false;    // 이번 이벤트 입장 보너스 받았는지
+    let eventBoxes = [];            // {x, y, r} 📦 상자타임
     let lastBoxSpawnMs = 0;
-    // 🎰 스핀타임
-    let lastSpinBonusMs = 0;
+    let lastSpinBonusMs = 0;        // 🎰 스핀타임 마지막 충전 시각
+
+    function checkEventReset() {
+      const ev = getActiveEvent();
+      if (!ev) return;
+      if (lastEventIdx !== ev.index) {
+        // 새 이벤트 진입! 1회성 플래그 다 초기화
+        lastEventIdx = ev.index;
+        eventEntryBonus = false;
+        codeRevealed = null;
+        if (usedCodes['WOW']) delete usedCodes['WOW'];
+        lastSpinBonusMs = 0;
+        eventBoxes = [];
+        saveProgress();
+      }
+    }
 
     function saveProgress() {
       try {
-        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, codeRevealed, lastSpinBonusMs, eventEntryBonus };
+        const data = { coins, owned, abilities, ownedSkins, currentSkin, usedCodes, cheerEnabled, stats, lastSpinMs, freeSpins, codeRevealed, lastSpinBonusMs, eventEntryBonus, lastEventIdx };
         localStorage.setItem(SAVE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
@@ -1836,6 +1858,7 @@
         if (typeof data.codeRevealed === 'boolean') codeRevealed = data.codeRevealed;
         if (typeof data.lastSpinBonusMs === 'number') lastSpinBonusMs = data.lastSpinBonusMs;
         if (typeof data.eventEntryBonus === 'boolean') eventEntryBonus = data.eventEntryBonus;
+        if (typeof data.lastEventIdx === 'number') lastEventIdx = data.lastEventIdx;
         if (data.stats && typeof data.stats === 'object') {
           stats.records = Array.isArray(data.stats.records) ? data.stats.records : [];
         }
@@ -5150,15 +5173,15 @@
         result.className = 'code-result fail';
         return;
       }
-      // 🎉 이벤트 코드타임 한정 코드: 10분 안에만 작동
+      // 🎉 이벤트 코드타임 한정 코드: 코드타임 슬롯 안에만 작동
       if (reward.eventCode) {
-        const now = Date.now();
-        if (now < EVENT_START_MS) {
+        const ev = getActiveEvent();
+        if (!ev || Date.now() < ev.start) {
           result.textContent = '아직 안 됨!';
           result.className = 'code-result fail';
           return;
         }
-        if (now >= CODE_TIME_END_MS) {
+        if (getCurrentSlot() !== 'code') {
           result.textContent = '코드타임 끝났어 😢';
           result.className = 'code-result fail';
           return;
@@ -5434,15 +5457,17 @@
       const titleEl = banner.querySelector('.ev-title');
       const timeEl  = banner.querySelector('.ev-time');
       const now = Date.now();
-      // 시작 1시간 전 이전 → 숨김
-      if (now < EVENT_NOTIFY_MS) { banner.classList.add('hidden'); return; }
-      // 이벤트 완전 종료 (16:30 이후) → 숨김
-      if (now >= EVENT_END_MS) { banner.classList.add('hidden'); return; }
+
+      // 새 이벤트 진입했으면 1회성 플래그 다 리셋
+      checkEventReset();
+
+      const ev = getActiveEvent();
+      if (!ev) { banner.classList.add('hidden'); return; }
       banner.classList.remove('hidden');
 
       const slot = getCurrentSlot();
 
-      // 🎁 이벤트 입장 보너스: 슬롯 활성중 처음 들어오면 1000원 (1회만)
+      // 🎁 이벤트 입장 보너스: 슬롯 활성중 처음 들어오면 1000원 (이벤트마다 1번)
       if (slot !== null && !eventEntryBonus) {
         eventEntryBonus = true;
         coins += 1000;
@@ -5453,85 +5478,66 @@
 
       // 🎰 스핀타임: 1분마다 freeSpins +1 (12분 동안 12번 충전)
       if (slot === 'spin') {
-        const spinSlotStart = EVENT_START_MS + 4 * SLOT_MS;   // 16:18
+        const spinSlotStart = ev.start + 4 * SLOT_MS;
+        const spinSlotEnd   = ev.start + 5 * SLOT_MS;
         if (lastSpinBonusMs < spinSlotStart) {
           // 처음 진입: 슬롯 시작 1분 전으로 두면 진입 즉시 1번 충전됨
           lastSpinBonusMs = spinSlotStart - 60000;
         }
         // 1분 단위로 적립 (총 12번: 진입 즉시 + 1분~11분 후)
-        while (lastSpinBonusMs + 60000 <= now && lastSpinBonusMs + 60000 <= SLOT5_END_MS) {
+        while (lastSpinBonusMs + 60000 <= now && lastSpinBonusMs + 60000 <= spinSlotEnd) {
           lastSpinBonusMs += 60000;
           freeSpins += 1;
           saveProgress();
         }
       }
 
-      if (now < EVENT_START_MS) {
+      // 슬롯별 종료 시각 / 카운트다운 시각 계산
+      const slotIdx = { code: 1, dance: 2, money: 3, box: 4, spin: 5 }[slot];
+      const slotEnd = slotIdx ? ev.start + slotIdx * SLOT_MS : 0;
+      const remainMs = slot === null ? (ev.start - now) : (slotEnd - now);
+      const m = Math.floor(remainMs / 60000);
+      const s = Math.floor((remainMs % 60000) / 1000);
+
+      if (slot === null) {
         // === 1시간 전 ~ 시작 직전: 카운트다운 ===
         banner.classList.add('upcoming');
         banner.classList.remove('live');
-        const remain = EVENT_START_MS - now;
-        const m = Math.floor(remain / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
         titleEl.textContent = '🎉 곧 이벤트가 시작됩니다!';
         timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
-      } else if (slot === 'code') {
-        banner.classList.add('live');
-        banner.classList.remove('upcoming');
-        if (codeRevealed === null) {
-          codeRevealed = Math.random() < 0.10;
-          saveProgress();
-        }
-        const remain = SLOT1_END_MS - now;
-        const m = Math.floor(remain / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
-        if (codeRevealed === true) {
-          if (usedCodes['WOW']) {
-            titleEl.textContent = '🔑 코드타임 진행중!';
-            timeEl.textContent = '✅ 코드 사용 완료 — ' + m + '분 ' + s + '초 남음';
-          } else {
-            titleEl.textContent = '🔑 비밀 코드: WOW';
-            timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 안에 코드 입력!';
-          }
-        } else {
-          titleEl.textContent = '🔑 코드타임 진행중!';
-          timeEl.textContent = '🤫 비밀 코드는 안 나왔어 — ' + m + '분 ' + s + '초 남음';
-        }
-      } else if (slot === 'dance') {
-        banner.classList.add('live');
-        banner.classList.remove('upcoming');
-        const remain = SLOT2_END_MS - now;
-        const m = Math.floor(remain / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
-        titleEl.textContent = '💃 댄스타임! 캐릭터가 춤춰!';
-        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
-      } else if (slot === 'money') {
-        banner.classList.add('live');
-        banner.classList.remove('upcoming');
-        const remain = SLOT3_END_MS - now;
-        const m = Math.floor(remain / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
-        titleEl.textContent = '💰 머니타임! 코인 1.5배!';
-        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
-      } else if (slot === 'box') {
-        banner.classList.add('live');
-        banner.classList.remove('upcoming');
-        const remain = SLOT4_END_MS - now;
-        const m = Math.floor(remain / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
-        titleEl.textContent = '📦 상자타임! 10%로 상자 등장!';
-        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
-      } else if (slot === 'spin') {
-        banner.classList.add('live');
-        banner.classList.remove('upcoming');
-        const remain = SLOT5_END_MS - now;
-        const m = Math.floor(remain / 60000);
-        const s = Math.floor((remain % 60000) / 1000);
-        titleEl.textContent = '🎰 스핀타임! 1분마다 무료 스핀!';
-        timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음 (보너스: ' + freeSpins + '번)';
       } else {
-        banner.classList.add('hidden');
-        return;
+        banner.classList.add('live');
+        banner.classList.remove('upcoming');
+        if (slot === 'code') {
+          if (codeRevealed === null) {
+            codeRevealed = Math.random() < 0.10;
+            saveProgress();
+          }
+          if (codeRevealed === true) {
+            if (usedCodes['WOW']) {
+              titleEl.textContent = '🔑 코드타임 진행중!';
+              timeEl.textContent = '✅ 코드 사용 완료 — ' + m + '분 ' + s + '초 남음';
+            } else {
+              titleEl.textContent = '🔑 비밀 코드: WOW';
+              timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 안에 코드 입력!';
+            }
+          } else {
+            titleEl.textContent = '🔑 코드타임 진행중!';
+            timeEl.textContent = '🤫 비밀 코드는 안 나왔어 — ' + m + '분 ' + s + '초 남음';
+          }
+        } else if (slot === 'dance') {
+          titleEl.textContent = '💃 댄스타임! 캐릭터가 춤춰!';
+          timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+        } else if (slot === 'money') {
+          titleEl.textContent = '💰 머니타임! 코인 1.5배!';
+          timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+        } else if (slot === 'box') {
+          titleEl.textContent = '📦 상자타임! 10%로 상자 등장!';
+          timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음';
+        } else if (slot === 'spin') {
+          titleEl.textContent = '🎰 스핀타임! 1분마다 무료 스핀!';
+          timeEl.textContent = '⏰ ' + m + '분 ' + s + '초 남음 (보너스: ' + freeSpins + '번)';
+        }
       }
     }
     // 받기 버튼 제거됨 — 입장 보너스 1000원이 자동 지급됨 (위 입장 보너스 분기 참고)
