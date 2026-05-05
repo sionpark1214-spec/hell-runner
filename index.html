@@ -2810,7 +2810,7 @@
           const dx = phx - bx.x, dy = phy - bx.y;
           const rr = (PLAYER_W / 2 + bx.r);
           if (dx * dx + dy * dy < rr * rr) {
-            const reward = Math.random() < 0.01 ? 1000 : 500;
+            const reward = Math.random() < 0.01 ? 1000 : 100;
             awardCoins(reward);
             eventBoxes.splice(i, 1);
             try { playDingSound(); } catch (e) {}
