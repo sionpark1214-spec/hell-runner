@@ -1786,11 +1786,11 @@
     const EVENT_NOTIFY_MS = EVENT_START_MS - 60 * 60 * 1000;             // 1시간 전부터 알림 (오후 2:30)
     // 슬롯 5개, 각 12분 (15:30~16:30 정확히 60분 꽉 채움)
     const SLOT_MS = 12 * 60 * 1000;
-    const SLOT1_END_MS = EVENT_START_MS + 1 * SLOT_MS;   // 코드타임 끝 (15:10)
-    const SLOT2_END_MS = EVENT_START_MS + 2 * SLOT_MS;   // 댄스타임 끝 (15:20)
-    const SLOT3_END_MS = EVENT_START_MS + 3 * SLOT_MS;   // 머니타임 끝 (15:30)
-    const SLOT4_END_MS = EVENT_START_MS + 4 * SLOT_MS;   // 상자타임 끝 (15:40)
-    const SLOT5_END_MS = EVENT_START_MS + 5 * SLOT_MS;   // 스핀타임 끝 (15:50)
+    const SLOT1_END_MS = EVENT_START_MS + 1 * SLOT_MS;   // 🔑 코드타임 끝 (15:42)
+    const SLOT2_END_MS = EVENT_START_MS + 2 * SLOT_MS;   // 💃 댄스타임 끝 (15:54)
+    const SLOT3_END_MS = EVENT_START_MS + 3 * SLOT_MS;   // 💰 머니타임 끝 (16:06)
+    const SLOT4_END_MS = EVENT_START_MS + 4 * SLOT_MS;   // 📦 상자타임 끝 (16:18)
+    const SLOT5_END_MS = EVENT_START_MS + 5 * SLOT_MS;   // 🎰 스핀타임 끝 (16:30)
     const CODE_TIME_END_MS = SLOT1_END_MS;                // 호환용 별칭
     function getCurrentSlot() {
       const now = Date.now();
@@ -5468,13 +5468,14 @@
         try { flashCoins(); } catch (e) {}
       }
 
-      // 🎰 스핀타임: 1분마다 freeSpins +1 (10번 충전)
+      // 🎰 스핀타임: 1분마다 freeSpins +1 (12분 동안 12번 충전)
       if (slot === 'spin') {
-        if (lastSpinBonusMs < EVENT_START_MS + 4 * SLOT_MS) {
-          // 처음 진입: 다음 충전 시점을 슬롯 시작 + 1분으로
-          lastSpinBonusMs = EVENT_START_MS + 4 * SLOT_MS;
+        const spinSlotStart = EVENT_START_MS + 4 * SLOT_MS;   // 16:18
+        if (lastSpinBonusMs < spinSlotStart) {
+          // 처음 진입: 슬롯 시작 1분 전으로 두면 진입 즉시 1번 충전됨
+          lastSpinBonusMs = spinSlotStart - 60000;
         }
-        // 1분 단위로 적립
+        // 1분 단위로 적립 (총 12번: 진입 즉시 + 1분~11분 후)
         while (lastSpinBonusMs + 60000 <= now && lastSpinBonusMs + 60000 <= SLOT5_END_MS) {
           lastSpinBonusMs += 60000;
           freeSpins += 1;
