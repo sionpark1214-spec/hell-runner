@@ -1268,6 +1268,64 @@
       osc.start(now); osc.stop(now + dur + 0.05);
     }
     // 지옥의 왕 — 쿠쿵쿵! (땅 짧아지는 저주파 폭발 3연타, 크게!)
+    // 💀 시작2: 솟는 가시 경고 — 틱틱틱 (높은 클릭음 3번)
+    function playTickSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      [0, 0.15, 0.30].forEach(d => {
+        const t0 = now + d;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(2200, t0);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.linearRampToValueAtTime(0.20, t0 + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.08);
+      });
+    }
+    // 💀 시작2: 톱니 경고 — 부웅부웅 (저음 모터음)
+    function playSawSound() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(80, now);
+      osc.frequency.linearRampToValueAtTime(140, now + 0.15);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.30);
+      osc.frequency.linearRampToValueAtTime(140, now + 0.45);
+      osc.frequency.linearRampToValueAtTime(80, now + 0.60);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.35, now + 0.02);
+      gain.gain.setValueAtTime(0.35, now + 0.55);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.75);
+    }
+    // 💀 시작2: 박쥐 — 끼익 (높이 올라가는 비명)
+    function playBatScream() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(900, now);
+      osc.frequency.exponentialRampToValueAtTime(2400, now + 0.20);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.35);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.45);
+    }
     function playRumbleSound() {
       const ctx = getAudioCtx();
       if (!ctx) return;
@@ -1892,6 +1950,10 @@
     let wings = [];
     let wingsCharged = false;       // 날개신발 먹으면 다음 점프 한 번 큰 점프
     let flames = [];
+    // 💀 시작2 모드 전용
+    let risingSpikes = [];   // { x, state, warnMs, riseMs } 솟는 가시
+    let sawBlades = [];      // { x, y, r, vx, warned } 굴러오는 톱니
+    let bats = [];           // { x, y, r, vx, screamed, flapPhase } 박쥐
     const WINGS_JUMP_VEL = -15;     // 날개신발 점프 속도 (엄청 높이!)
 
     // ============================================================
@@ -2121,6 +2183,50 @@
       if (abilities.devilKing) baseLen *= 0.5;   // 실제 데이터도 반으로
       if (hardMode) baseLen *= 1.15;             // 💀 시작2: 땅 좀 더 길게
       MAP_LEN = baseLen;
+    }
+
+    // ========== 💀 시작2: 솟는 가시 / 톱니 / 박쥐 ==========
+    function generateHardObstacles(r) {
+      risingSpikes = [];
+      sawBlades = [];
+      bats = [];
+      if (!hardMode) return;
+      const RISING_COUNT = { 1: 5, 2: 7, 3: 8, 4: 10 }[r] || 0;
+      const SAW_COUNT    = { 1: 3, 2: 5, 3: 6, 4: 7 }[r]  || 0;
+      const BAT_COUNT    = { 1: 2, 2: 3, 3: 5, 4: 6 }[r]  || 0;
+      const startX = 500;
+      const endX = Math.max(startX + 200, MAP_LEN - 400);
+      const range = endX - startX;
+      const usedXs = [];   // 박쥐가 가시랑 안 겹치게 추적
+      // 솟는 가시
+      for (let i = 0; i < RISING_COUNT; i++) {
+        const x = Math.round(startX + range * (i + 0.5) / RISING_COUNT + (Math.random() - 0.5) * 120);
+        risingSpikes.push({ x, state: 'wait', warnMs: 0, riseMs: 0 });
+        usedXs.push(x);
+      }
+      // 톱니 (앞에서 굴러오게 좌측 이동)
+      for (let i = 0; i < SAW_COUNT; i++) {
+        const x = Math.round(startX + range * (i + 0.5) / SAW_COUNT + (Math.random() - 0.5) * 200);
+        sawBlades.push({ x, y: GROUND_Y - 18, r: 18, vx: -3.5, warned: false, rot: 0 });
+      }
+      // 박쥐 (가시랑 안 겹치게)
+      for (let i = 0; i < BAT_COUNT; i++) {
+        let x = Math.round(startX + range * (i + 0.5) / BAT_COUNT + (Math.random() - 0.5) * 200);
+        // 가시 x 근처면 50픽셀 옆으로 옮김 (최대 5번 시도)
+        for (let tries = 0; tries < 5; tries++) {
+          let conflict = false;
+          for (const ux of usedXs) {
+            if (Math.abs(ux - x) < 70) { conflict = true; break; }
+          }
+          for (const s of spikes) {
+            if (Math.abs(s.x - x) < 70) { conflict = true; break; }
+          }
+          if (!conflict) break;
+          x += 90;
+        }
+        bats.push({ x, y: GROUND_Y - 50, r: 12, vx: -2.2, screamed: false, flapPhase: Math.random() * Math.PI * 2 });
+        usedXs.push(x);
+      }
     }
 
     // ========== 블록 (점프해서 올라탈 수 있는 발판) ==========
@@ -2413,6 +2519,7 @@
           generateSpikes(round);
           generateBlocks(round);
         }
+        generateHardObstacles(round);   // 💀 시작2 전용 (hardMode 아니면 빈 배열)
       }
       hideAllScreens();
       showHud();
@@ -2859,6 +2966,90 @@
           if (dx * dx + dy * dy < rr * rr) {
             wingsCharged = true;
             wings.splice(i, 1);
+          }
+        }
+
+        // 💀 시작2: 솟는 가시 상태 갱신
+        if (hardMode) {
+          const nowMs = performance.now();
+          for (let i = risingSpikes.length - 1; i >= 0; i--) {
+            const rs = risingSpikes[i];
+            if (rs.state === 'wait') {
+              if (player.x > rs.x - 240 && player.x < rs.x - 80) {
+                rs.state = 'warning';
+                rs.warnMs = nowMs;
+                playTickSound();
+              }
+            } else if (rs.state === 'warning') {
+              if (nowMs - rs.warnMs >= 800) {
+                rs.state = 'rising';
+                rs.riseMs = nowMs;
+              }
+            } else if (rs.state === 'rising') {
+              if (nowMs - rs.riseMs >= 350) {
+                // 진짜 가시로 변환 (spikes 배열에 추가)
+                spikes.push({
+                  x: rs.x - 14,
+                  y: GROUND_Y - 28,
+                  w: 28,
+                  h: 28,
+                  type: 'spike',
+                  seed: Math.random() * 1000,
+                  fromRising: true
+                });
+                risingSpikes.splice(i, 1);
+              }
+            }
+          }
+          // 🪚 톱니 이동 + 경고 + 충돌
+          for (let i = sawBlades.length - 1; i >= 0; i--) {
+            const saw = sawBlades[i];
+            // 800픽셀 안에 들어오면 경고 한 번
+            if (player.x > saw.x - 800 && !saw.warned) {
+              saw.warned = true;
+              playSawSound();
+            }
+            // 경고 후 굴러옴
+            if (saw.warned) {
+              saw.x += saw.vx;
+              saw.rot += 0.25;
+            }
+            // 충돌 (점프 안 한 상태에서만 닿음, 점프 시 위로 넘어감)
+            if (!isInvincible()) {
+              const dx = phx - saw.x;
+              const dy = phy - saw.y;
+              if (Math.abs(dx) < PLAYER_W / 2 + saw.r - 2 && Math.abs(dy) < PLAYER_H / 2 + saw.r - 2) {
+                die();
+                return;
+              }
+            }
+            // 화면 왼쪽으로 너무 멀리 가면 제거
+            if (saw.x < camera.x - 200) {
+              sawBlades.splice(i, 1);
+            }
+          }
+          // 🦇 박쥐 이동 + 경고 + 충돌
+          for (let i = bats.length - 1; i >= 0; i--) {
+            const bat = bats[i];
+            if (player.x > bat.x - 600 && !bat.screamed) {
+              bat.screamed = true;
+              playBatScream();
+            }
+            if (bat.screamed) {
+              bat.x += bat.vx;
+              bat.flapPhase += 0.25;
+            }
+            if (!isInvincible()) {
+              const dx = phx - bat.x;
+              const dy = phy - bat.y;
+              if (Math.abs(dx) < PLAYER_W / 2 + bat.r - 2 && Math.abs(dy) < PLAYER_H / 2 + bat.r - 2) {
+                die();
+                return;
+              }
+            }
+            if (bat.x < camera.x - 200) {
+              bats.splice(i, 1);
+            }
           }
         }
 
@@ -3648,6 +3839,151 @@
         sideG.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = sideG;
         ctx.fillRect(b.x, b.y + 3, Math.min(8, b.w), b.h - 3);
+      }
+    }
+
+    // 💀 시작2: 솟는 가시 시각 (경고/솟는 중)
+    function drawRisingSpikes() {
+      if (!hardMode || risingSpikes.length === 0) return;
+      const t = performance.now();
+      for (const rs of risingSpikes) {
+        if (rs.x + 30 < camera.x - 10 || rs.x - 30 > camera.x + DW + 10) continue;
+        if (rs.state === 'warning') {
+          // 깜빡이는 빨간 위험 표시 + 땅 진동
+          const k = (t - rs.warnMs) / 800;        // 0 → 1
+          const blink = Math.sin(t * 0.04) > 0;
+          const shake = (Math.random() - 0.5) * 2 * (0.4 + k * 0.6);
+          // 땅 갈라짐 표시
+          ctx.save();
+          ctx.translate(shake, 0);
+          ctx.fillStyle = blink ? 'rgba(255, 0, 0, 0.6)' : 'rgba(150, 0, 0, 0.4)';
+          ctx.fillRect(rs.x - 14, GROUND_Y - 2, 28, 4);
+          // 위험 ! 표시
+          ctx.fillStyle = blink ? '#ff1744' : '#b71c1c';
+          ctx.font = 'bold 18px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚠', rs.x, GROUND_Y - 8 + shake);
+          ctx.textAlign = 'left';
+          ctx.restore();
+        } else if (rs.state === 'rising') {
+          // 가시가 땅에서 솟아나는 애니
+          const k = Math.min(1, (t - rs.riseMs) / 350);
+          const h = 28 * k;
+          ctx.save();
+          ctx.fillStyle = '#37474f';
+          ctx.beginPath();
+          ctx.moveTo(rs.x - 14, GROUND_Y);
+          ctx.lineTo(rs.x + 14, GROUND_Y);
+          ctx.lineTo(rs.x, GROUND_Y - h);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          // 솟아오를 때 먼지
+          ctx.fillStyle = `rgba(160, 130, 90, ${0.8 * (1 - k)})`;
+          for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.arc(rs.x - 12 + i * 8, GROUND_Y + 2, 3 - i * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    // 💀 시작2: 톱니
+    function drawSawBlades() {
+      if (!hardMode || sawBlades.length === 0) return;
+      const t = performance.now();
+      for (const saw of sawBlades) {
+        if (saw.x + 40 < camera.x - 10 || saw.x - 40 > camera.x + DW + 10) continue;
+        ctx.save();
+        ctx.translate(saw.x, saw.y);
+        ctx.rotate(saw.rot);
+        // 톱니 본체 (회색 원)
+        ctx.fillStyle = '#90a4ae';
+        ctx.beginPath();
+        ctx.arc(0, 0, saw.r, 0, Math.PI * 2);
+        ctx.fill();
+        // 톱날 (8개 삼각형)
+        ctx.fillStyle = '#cfd8dc';
+        for (let i = 0; i < 8; i++) {
+          const a = (i * Math.PI / 4);
+          ctx.save();
+          ctx.rotate(a);
+          ctx.beginPath();
+          ctx.moveTo(saw.r - 2, -4);
+          ctx.lineTo(saw.r + 7, 0);
+          ctx.lineTo(saw.r - 2, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+        // 중심
+        ctx.fillStyle = '#37474f';
+        ctx.beginPath();
+        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+        // 경고 전이면 위치 표시 (땅에 그림자 + 화살표)
+        if (!saw.warned) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(244, 67, 54, 0.5)';
+          ctx.beginPath();
+          ctx.ellipse(saw.x, GROUND_Y, 14, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    // 💀 시작2: 박쥐
+    function drawBats() {
+      if (!hardMode || bats.length === 0) return;
+      const t = performance.now();
+      for (const bat of bats) {
+        if (bat.x + 30 < camera.x - 10 || bat.x - 30 > camera.x + DW + 10) continue;
+        const flap = Math.sin(bat.flapPhase) * 0.8;
+        ctx.save();
+        ctx.translate(bat.x, bat.y);
+        // 몸통
+        ctx.fillStyle = '#212121';
+        ctx.beginPath();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // 날개 왼쪽
+        ctx.save();
+        ctx.rotate(-0.5 - flap);
+        ctx.fillStyle = '#3e2723';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-10, -2, -14, -4);
+        ctx.quadraticCurveTo(-10, 3, 0, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        // 날개 오른쪽
+        ctx.save();
+        ctx.rotate(0.5 + flap);
+        ctx.fillStyle = '#3e2723';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(10, -2, 14, -4);
+        ctx.quadraticCurveTo(10, 3, 0, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        // 눈
+        ctx.fillStyle = '#ff5722';
+        ctx.beginPath();
+        ctx.arc(-2, -2, 1.2, 0, Math.PI * 2);
+        ctx.arc(2, -2, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       }
     }
 
@@ -4893,6 +5229,9 @@
       drawFinish();
       drawSpikes();
       drawBlocks();
+      drawRisingSpikes();
+      drawSawBlades();
+      drawBats();
       drawSpikeShards();
       drawProjectiles();
       drawBossBolts();
