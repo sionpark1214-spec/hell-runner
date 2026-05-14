@@ -2119,6 +2119,7 @@
       const minLen = abilities.devilKing ? MIN_MAP_LEN * 0.5 : MIN_MAP_LEN;
       let baseLen = Math.max(MAP_START_X + maxCols * GRID_W + 200, minLen);
       if (abilities.devilKing) baseLen *= 0.5;   // 실제 데이터도 반으로
+      if (hardMode) baseLen *= 1.15;             // 💀 시작2: 땅 좀 더 길게
       MAP_LEN = baseLen;
     }
 
@@ -2377,6 +2378,7 @@
       let baseS = BASE_SPEED;
       if (abilities.kidSpeed) baseS = BASE_SPEED * 1.18;
       if (abilities.giant)    baseS = BASE_SPEED * 0.7;
+      if (hardMode)           baseS *= 1.15;   // 💀 시작2: 좀 더 빠름
       player.speed = baseS;
 
       if (bossMode) {
