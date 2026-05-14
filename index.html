@@ -2731,7 +2731,7 @@
       document.getElementById('round-num').textContent = bossMode ? '👹' : round;
       document.getElementById('progress-bar').style.width = '0%';
       const info = document.getElementById('bolt-info');
-      if ((!abilities.goblin && (round >= 3 || bossMode))) {
+      if (hardMode || (!abilities.goblin && (round >= 3 || bossMode))) {
         info.style.display = 'none';
       } else {
         info.style.display = 'inline-block';
@@ -2745,7 +2745,7 @@
       const c = document.getElementById('controls');
       c.classList.remove('hidden');
       const bolt = document.getElementById('bolt-btn');
-      if ((!abilities.goblin && (round >= 3 || bossMode))) {
+      if (hardMode || (!abilities.goblin && (round >= 3 || bossMode))) {
         bolt.classList.add('hidden');
       } else {
         bolt.classList.remove('hidden');
