@@ -771,7 +771,7 @@
             </div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
               <button id="start-btn">시작!</button>
-              <button id="start-hard-btn" class="hard-btn">💀 시작2</button>
+              <button id="start-hard-btn" class="hard-btn">💀 시작2 (돈 ×3)</button>
             </div>
             <!-- 숨긴 버튼 (코드 호환용) -->
             <button id="boss-btn" class="boss-btn" style="display:none">👹 보스</button>
@@ -888,6 +888,7 @@
         <div id="clear-screen" class="screen hidden">
           <h1>🎉 축하합니다! 🎉</h1>
           <p><span id="clear-round">1</span>라운드 클리어!</p>
+          <p id="clear-coin-info" style="font-weight:bold;"></p>
           <button id="next-btn">다음 라운드</button>
         </div>
 
@@ -2677,6 +2678,15 @@
       } else {
         document.getElementById('clear-round').textContent = round;
         document.getElementById('next-btn').textContent = (round + 1) + '라운드 시작!';
+        const coinInfo = document.getElementById('clear-coin-info');
+        const base = round * 100;
+        if (hardMode) {
+          coinInfo.innerHTML = '💀 시작2 보너스!<br>💰 ' + base + '원 × 3 = <span style="color:#ffeb3b;">' + (base * 3) + '원</span> 받음!';
+          coinInfo.style.color = '#ff5252';
+        } else {
+          coinInfo.innerHTML = '💰 ' + base + '원 받음!';
+          coinInfo.style.color = '#ffeb3b';
+        }
         document.getElementById('clear-screen').classList.remove('hidden');
       }
     }
