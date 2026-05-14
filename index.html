@@ -771,7 +771,7 @@
             </div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
               <button id="start-btn">시작!</button>
-              <button id="start-hard-btn" class="hard-btn">💀 시작2 (돈 ×3)</button>
+              <button id="start-hard-btn" class="hard-btn">💀 시작2 (돈 ×4)</button>
             </div>
             <!-- 숨긴 버튼 (코드 호환용) -->
             <button id="boss-btn" class="boss-btn" style="display:none">👹 보스</button>
@@ -1006,7 +1006,7 @@
     let state = STATE.START;
     let round = 1;
     let bossMode = false;          // 보스 도전 모드
-    let hardMode = false;          // 💀 시작2 어려움 모드 (돈 3배, 부스터 없음, 보스 없음 + 솟는가시/톱니/박쥐 예정)
+    let hardMode = false;          // 💀 시작2 어려움 모드 (돈 4배, 부스터 없음, 보스 없음 + 솟는가시/톱니/박쥐)
     let bossActive = false;
     let bossHp = 0;                // 사용 안 함
     let bossPos = { x: 0, y: 580 };
@@ -1867,7 +1867,7 @@
     }
     function awardCoins(amount) {
       if (getCurrentSlot() === 'money') amount = Math.floor(amount * 1.5);
-      if (hardMode) amount = amount * 3;   // 💀 시작2 모드: 돈 3배
+      if (hardMode) amount = amount * 4;   // 💀 시작2 모드: 돈 4배
       coins += amount;
     }
     // 1회성 플래그들 — 이벤트가 바뀌면 checkEventReset()에서 다 초기화됨
@@ -2681,7 +2681,7 @@
         const coinInfo = document.getElementById('clear-coin-info');
         const base = round * 100;
         if (hardMode) {
-          coinInfo.innerHTML = '💀 시작2 보너스!<br>💰 ' + base + '원 × 3 = <span style="color:#ffeb3b;">' + (base * 3) + '원</span> 받음!';
+          coinInfo.innerHTML = '💀 시작2 보너스!<br>💰 ' + base + '원 × 4 = <span style="color:#ffeb3b;">' + (base * 4) + '원</span> 받음!';
           coinInfo.style.color = '#ff5252';
         } else {
           coinInfo.innerHTML = '💰 ' + base + '원 받음!';
