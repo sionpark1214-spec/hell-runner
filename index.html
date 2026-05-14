@@ -2757,7 +2757,7 @@
 
     function updateBoltButton() {
       const btn = document.getElementById('bolt-btn');
-      if ((!abilities.goblin && (round >= 3 || bossMode))) {
+      if (hardMode || (!abilities.goblin && (round >= 3 || bossMode))) {
         btn.classList.add('hidden');
       } else {
         btn.classList.remove('hidden');
