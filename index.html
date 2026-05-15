@@ -771,7 +771,7 @@
             </div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
               <button id="start-btn">시작!</button>
-              <button id="start-hard-btn" class="hard-btn">💀 시작2 (돈 ×4)</button>
+              <button id="start-hard-btn" class="hard-btn">시작2 (돈 ×4)</button>
             </div>
             <!-- 숨긴 버튼 (코드 호환용) -->
             <button id="boss-btn" class="boss-btn" style="display:none">👹 보스</button>
@@ -2681,7 +2681,7 @@
         const coinInfo = document.getElementById('clear-coin-info');
         const base = round * 100;
         if (hardMode) {
-          coinInfo.innerHTML = '💀 시작2 보너스!<br>💰 ' + base + '원 × 4 = <span style="color:#ffeb3b;">' + (base * 4) + '원</span> 받음!';
+          coinInfo.innerHTML = '시작2 보너스!<br>💰 ' + base + '원 × 4 = <span style="color:#ffeb3b;">' + (base * 4) + '원</span> 받음!';
           coinInfo.style.color = '#ff5252';
         } else {
           coinInfo.innerHTML = '💰 ' + base + '원 받음!';
