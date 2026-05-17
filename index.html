@@ -492,6 +492,21 @@
       border: 2px solid #777;
       border-radius: 10px;
       min-height: 56px;
+      cursor: pointer;
+      transition: transform 0.05s;
+    }
+    .inv-cell:active { transform: scale(0.94); }
+    .inv-cell.on {
+      background: rgba(255, 235, 59, 0.20);
+      border-color: #ffeb3b;
+      box-shadow: 0 0 12px rgba(255, 235, 59, 0.55);
+    }
+    .inv-cell.on .inv-name { color: #ffeb3b; }
+    .inv-cell .inv-on-tag {
+      font-size: 9px;
+      color: #ffeb3b;
+      font-weight: bold;
+      margin-top: -2px;
     }
     .inv-cell .inv-icon {
       font-size: 22px;
@@ -950,7 +965,7 @@
         <div id="ability-screen" class="screen hidden">
           <h1>⚡ 지옥 능력 ⚡</h1>
           <div class="coin-bar">💰 <span id="coin-amount">0</span> 원</div>
-          <p class="small">하나만 골라서 켜! (한 번에 한 개)</p>
+          <p class="small">돈으로 사기! 켜기는 🎒 인벤토리에서!</p>
           <div class="ability-list" id="ability-list"></div>
           <button id="ability-close">시작 화면으로</button>
         </div>
@@ -959,7 +974,7 @@
         <div id="skin-screen" class="screen hidden">
           <h1>🧍 캐릭터 🧍</h1>
           <div class="coin-bar">💰 <span id="skin-coin-amount">0</span> 원</div>
-          <p class="small">캐릭터 골라/사기!</p>
+          <p class="small">돈으로 사기! 바꾸기는 🎒 인벤토리에서!</p>
           <div class="skin-list" id="skin-list"></div>
           <button id="skin-close">시작 화면으로</button>
         </div>
@@ -5487,7 +5502,7 @@
     });
     function renderInventory() {
       document.getElementById('inv-coin-amount').textContent = coins;
-      // 가진 능력
+      // 가진 능력 — 클릭하면 켜기/끄기 (한 번에 하나만)
       const abGrid = document.getElementById('inv-ability-grid');
       abGrid.innerHTML = '';
       const ownedAb = ABILITY_DEFS.filter(a => owned[a.key]);
@@ -5497,12 +5512,16 @@
         ownedAb.forEach(a => {
           const cell = document.createElement('div');
           cell.className = 'inv-cell';
+          const isOn = !!abilities[a.key];
+          if (isOn) cell.classList.add('on');
           cell.innerHTML = '<div class="inv-icon">' + a.icon + '</div>' +
-                           '<div class="inv-name">' + a.name + '</div>';
+                           '<div class="inv-name">' + a.name + '</div>' +
+                           (isOn ? '<div class="inv-on-tag">켜짐!</div>' : '');
+          cell.addEventListener('click', () => toggleAbilityFromInv(a));
           abGrid.appendChild(cell);
         });
       }
-      // 가진 캐릭터
+      // 가진 캐릭터 — 클릭하면 그 캐릭터로 변경
       const skGrid = document.getElementById('inv-skin-grid');
       skGrid.innerHTML = '';
       const ownedSk = SKIN_DEFS.filter(s => ownedSkins[s.key]);
@@ -5512,11 +5531,37 @@
         ownedSk.forEach(s => {
           const cell = document.createElement('div');
           cell.className = 'inv-cell';
+          const isOn = (currentSkin === s.key);
+          if (isOn) cell.classList.add('on');
           cell.innerHTML = '<div class="inv-swatch" style="background:' + s.body + '"></div>' +
-                           '<div class="inv-name">' + s.name + '</div>';
+                           '<div class="inv-name">' + s.name + '</div>' +
+                           (isOn ? '<div class="inv-on-tag">쓰는 중</div>' : '');
+          cell.addEventListener('click', () => selectSkinFromInv(s));
           skGrid.appendChild(cell);
         });
       }
+    }
+    function toggleAbilityFromInv(a) {
+      if (!owned[a.key]) return;
+      const SPECIAL = new Set(['ghost', 'birdFly']);
+      const isSpecial = SPECIAL.has(a.key);
+      const turnOn = !abilities[a.key];
+      if (isSpecial) {
+        abilities[a.key] = turnOn;
+      } else {
+        ABILITY_DEFS.filter(x => !SPECIAL.has(x.key)).forEach(x => abilities[x.key] = false);
+        abilities[a.key] = turnOn;
+      }
+      playDingSound();
+      saveProgress();
+      renderInventory();
+    }
+    function selectSkinFromInv(s) {
+      if (!ownedSkins[s.key]) return;
+      currentSkin = s.key;
+      playDingSound();
+      saveProgress();
+      renderInventory();
     }
 
     // 도움말 화면
@@ -5730,7 +5775,7 @@
         if (!isOwned) el.classList.add('locked');
         if (isOn) el.classList.add('on');
         let label;
-        if (isOwned) label = isOn ? '쓰는 중' : '선택';
+        if (isOwned) label = isOn ? '쓰는 중' : '보유 ✓';
         else label = skinUnlockReason(s);
         el.innerHTML =
           '<div class="skin-swatch" style="background:' + s.body + '"></div>' +
@@ -5739,13 +5784,13 @@
         el.addEventListener('click', () => {
           let played = false;
           if (ownedSkins[s.key]) {
-            currentSkin = s.key;
-            played = true;
+            // 인벤토리에서만 캐릭터 변경 가능 — 여기선 안 함
+            return;
           } else if (s.unlock === 'buy') {
             if (coins >= s.cost) {
               coins -= s.cost;
               ownedSkins[s.key] = true;
-              currentSkin = s.key;
+              // 변경은 인벤토리에서!
               played = true;
             } else {
               flashCoins();
@@ -5781,7 +5826,7 @@
         if (!isOwned) el.classList.add('locked');
         if (isOn) el.classList.add('on');
         let stateLabel;
-        if (isOwned) stateLabel = isOn ? '켜짐!' : '꺼짐';
+        if (isOwned) stateLabel = isOn ? '켜짐!' : '보유 ✓';
         else if (a.unlock === 'buy') stateLabel = '💰' + a.cost;
         else stateLabel = '🔒' + unlockReason(a);
         el.innerHTML =
@@ -5795,28 +5840,15 @@
 
     function onAbilityClick(a) {
       let played = false;
-      // 게임 안 버튼 능력은 다른 일반 능력과 동시 사용 가능 (예외)
-      const SPECIAL = new Set(['ghost', 'birdFly']);
-      const isSpecial = SPECIAL.has(a.key);
+      // 능력 상점: 사기만 가능. 켜기/끄기는 인벤토리에서!
       if (owned[a.key]) {
-        const turnOn = !abilities[a.key];
-        if (isSpecial) {
-          abilities[a.key] = turnOn;
-        } else {
-          ABILITY_DEFS.filter(x => !SPECIAL.has(x.key)).forEach(x => abilities[x.key] = false);
-          abilities[a.key] = turnOn;
-        }
-        played = true;
+        // 이미 보유 — 여기선 아무것도 안 함
+        return;
       } else if (a.unlock === 'buy') {
         if (coins >= a.cost) {
           coins -= a.cost;
           owned[a.key] = true;
-          if (isSpecial) {
-            abilities[a.key] = true;
-          } else {
-            ABILITY_DEFS.filter(x => !SPECIAL.has(x.key)).forEach(x => abilities[x.key] = false);
-            abilities[a.key] = true;
-          }
+          // 켜기는 인벤토리에서!
           played = true;
         } else {
           flashCoins();
