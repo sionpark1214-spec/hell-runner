@@ -939,7 +939,6 @@
         <!-- 스핀 화면 -->
         <div id="spin-screen" class="screen hidden">
           <h1>🎰 행운의 스핀 🎰</h1>
-          <div class="coin-bar">💰 <span id="spin-coin">0</span> 원</div>
           <div id="spin-cooldown" class="spin-cooldown">⏰ 다음 스핀까지 10시간</div>
           <div class="spin-box" id="spin-box">🎰 스핀!</div>
           <div id="spin-result" class="spin-result"></div>
@@ -964,7 +963,6 @@
         <!-- 지옥 능력 선택 화면 -->
         <div id="ability-screen" class="screen hidden">
           <h1>⚡ 지옥 능력 ⚡</h1>
-          <div class="coin-bar">💰 <span id="coin-amount">0</span> 원</div>
           <p class="small">돈으로 사기! 켜기는 🎒 인벤토리에서!</p>
           <div class="ability-list" id="ability-list"></div>
           <button id="ability-close">시작 화면으로</button>
@@ -973,7 +971,6 @@
         <!-- 캐릭터 선택 화면 -->
         <div id="skin-screen" class="screen hidden">
           <h1>🧍 캐릭터 🧍</h1>
-          <div class="coin-bar">💰 <span id="skin-coin-amount">0</span> 원</div>
           <p class="small">돈으로 사기! 바꾸기는 🎒 인벤토리에서!</p>
           <div class="skin-list" id="skin-list"></div>
           <button id="skin-close">시작 화면으로</button>
@@ -5627,7 +5624,6 @@
       return freeSpins > 0 || (Date.now() - lastSpinMs >= SPIN_COOLDOWN_MS);
     }
     function renderSpin() {
-      document.getElementById('spin-coin').textContent = coins;
       const cooldown = document.getElementById('spin-cooldown');
       const btn = document.getElementById('spin-do');
       const box = document.getElementById('spin-box');
@@ -5764,7 +5760,6 @@
       return '공짜';
     }
     function renderSkins() {
-      document.getElementById('skin-coin-amount').textContent = coins;
       const list = document.getElementById('skin-list');
       list.innerHTML = '';
       SKIN_DEFS.forEach(s => {
@@ -5815,7 +5810,6 @@
     }
 
     function renderAbilities() {
-      document.getElementById('coin-amount').textContent = coins;
       const list = document.getElementById('ability-list');
       list.innerHTML = '';
       ABILITY_DEFS.forEach(a => {
@@ -5860,7 +5854,9 @@
     }
 
     function flashCoins() {
-      const el = document.querySelector('.coin-bar');
+      // 돈은 인벤토리에만 보임 — 인벤토리 코인이 화면에 있으면 그걸 흔든다
+      const el = document.getElementById('inv-coin-amount');
+      if (!el) return;
       el.style.transition = 'transform 0.1s';
       el.style.transform = 'scale(1.2)';
       el.style.color = '#ff5722';
