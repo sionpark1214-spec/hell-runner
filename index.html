@@ -442,6 +442,85 @@
       font-weight: bold;
       margin-bottom: 6px;
     }
+    /* 🎒 인벤토리 */
+    .screen button.inv-btn {
+      background: linear-gradient(180deg, #6d4c41, #3e2723);
+      border-color: #d7ccc8;
+      box-shadow: 0 4px 0 #1b0e09, 0 0 14px rgba(215, 204, 200, 0.5);
+      color: #fff;
+      font-size: 16px;
+      padding: 8px 18px;
+    }
+    .screen button.inv-btn:active { box-shadow: 0 2px 0 #1b0e09; }
+    .inv-coin {
+      display: inline-block;
+      background: rgba(0, 0, 0, 0.55);
+      border: 3px solid #ffeb3b;
+      padding: 10px 24px;
+      border-radius: 18px;
+      font-size: 20px;
+      color: #ffeb3b;
+      font-weight: bold;
+      margin: 4px 0 12px;
+      box-shadow: 0 0 18px rgba(255, 235, 59, 0.55);
+      white-space: nowrap;
+    }
+    .inv-section-title {
+      font-size: 13px;
+      color: #ff8a65;
+      font-weight: bold;
+      margin: 6px 0 4px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .inv-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 6px;
+      max-height: 24vh;
+      overflow-y: auto;
+    }
+    .inv-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 3px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid #777;
+      border-radius: 10px;
+      min-height: 56px;
+    }
+    .inv-cell .inv-icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+    .inv-cell .inv-swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      border: 1.5px solid #000;
+    }
+    .inv-cell .inv-name {
+      font-size: 10px;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .inv-empty {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      color: #888;
+      padding: 14px 0;
+      text-align: center;
+      white-space: nowrap;
+    }
     .screen .small {
       font-size: 12px;
       color: #ffab91;
@@ -768,6 +847,7 @@
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:nowrap;">
               <button id="ability-btn" class="ability-btn">⚡ 능력</button>
               <button id="skin-btn" class="skin-btn">🧍 캐릭터</button>
+              <button id="inventory-btn" class="inv-btn">🎒 인벤토리</button>
             </div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
               <button id="start-btn">시작!</button>
@@ -882,6 +962,17 @@
           <p class="small">캐릭터 골라/사기!</p>
           <div class="skin-list" id="skin-list"></div>
           <button id="skin-close">시작 화면으로</button>
+        </div>
+
+        <!-- 🎒 인벤토리 화면 -->
+        <div id="inventory-screen" class="screen hidden">
+          <h1>🎒 인벤토리 🎒</h1>
+          <div class="inv-coin">💰 <span id="inv-coin-amount">0</span> 원</div>
+          <div class="inv-section-title">━━ ⚡ 가진 능력 ━━</div>
+          <div class="inv-grid" id="inv-ability-grid"></div>
+          <div class="inv-section-title">━━ 🧍 가진 캐릭터 ━━</div>
+          <div class="inv-grid" id="inv-skin-grid"></div>
+          <button id="inventory-close">닫기</button>
         </div>
 
         <!-- 클리어 화면 -->
@@ -5383,6 +5474,50 @@
       document.getElementById('skin-screen').classList.add('hidden');
       document.getElementById('start-screen').classList.remove('hidden');
     });
+
+    // 🎒 인벤토리 화면
+    document.getElementById('inventory-btn').addEventListener('click', () => {
+      document.getElementById('start-screen').classList.add('hidden');
+      document.getElementById('inventory-screen').classList.remove('hidden');
+      renderInventory();
+    });
+    document.getElementById('inventory-close').addEventListener('click', () => {
+      document.getElementById('inventory-screen').classList.add('hidden');
+      document.getElementById('start-screen').classList.remove('hidden');
+    });
+    function renderInventory() {
+      document.getElementById('inv-coin-amount').textContent = coins;
+      // 가진 능력
+      const abGrid = document.getElementById('inv-ability-grid');
+      abGrid.innerHTML = '';
+      const ownedAb = ABILITY_DEFS.filter(a => owned[a.key]);
+      if (ownedAb.length === 0) {
+        abGrid.innerHTML = '<div class="inv-empty">아직 가진 능력 없음</div>';
+      } else {
+        ownedAb.forEach(a => {
+          const cell = document.createElement('div');
+          cell.className = 'inv-cell';
+          cell.innerHTML = '<div class="inv-icon">' + a.icon + '</div>' +
+                           '<div class="inv-name">' + a.name + '</div>';
+          abGrid.appendChild(cell);
+        });
+      }
+      // 가진 캐릭터
+      const skGrid = document.getElementById('inv-skin-grid');
+      skGrid.innerHTML = '';
+      const ownedSk = SKIN_DEFS.filter(s => ownedSkins[s.key]);
+      if (ownedSk.length === 0) {
+        skGrid.innerHTML = '<div class="inv-empty">아직 가진 캐릭터 없음</div>';
+      } else {
+        ownedSk.forEach(s => {
+          const cell = document.createElement('div');
+          cell.className = 'inv-cell';
+          cell.innerHTML = '<div class="inv-swatch" style="background:' + s.body + '"></div>' +
+                           '<div class="inv-name">' + s.name + '</div>';
+          skGrid.appendChild(cell);
+        });
+      }
+    }
 
     // 도움말 화면
     document.getElementById('help-btn').addEventListener('click', () => {
